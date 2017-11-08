@@ -10,7 +10,7 @@
         "level": "error"
     },
 	"dhtout": {
-		"dhtoutEnabled": 1,
+		"dhtoutEnabled": 0,
 		"dhtoutIP":"192.168.1.101",
 		"dhtoutWired": 1,
 		"dhtoutWiredPin": 20
@@ -39,7 +39,7 @@
         "minTemp": 15.0,
         "minUIEnabled": 1,
         "minUITimeout": 30,
-        "tempCheckInterval": 5,
+        "tempCheckInterval": 20,
         "tempHysteresis": 0.3,
         "tempStep": 0.1,
 		"tempice": 16,

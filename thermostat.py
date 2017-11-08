@@ -297,7 +297,7 @@ priorCorrected	= -100.0
 # openDoor e openDoorcheck for stop sistem for a time set in thermostat_setting and temperature change quickly of 1 C degrees
 openDoor		= 21 if not( state.exists( "thermostat" ) ) else int((state.get( "thermostat" )[ "openDoor" ]/state.get( "thermostat" )[ "tempCheckInterval" ])+1)
 openDoorCheck	= 20 if not( state.exists( "thermostat" ) ) else int(state.get( "thermostat" )[ "openDoor" ]/state.get( "thermostat" )[ "tempCheckInterval" ])
-
+measure_count = 0
 setTemp			= 22.0 if not( state.exists( "state" ) ) else state.get( "state" )[ "setTemp" ]
 setice			= 15.0 if not(settings.exists ( "thermostat")) else settings.get("thermostat")["tempice"]
 tempHysteresis		= 0.5  if not( settings.exists( "thermostat" ) ) else settings.get( "thermostat" )[ "tempHysteresis" ]
@@ -926,7 +926,7 @@ def control_callback( control ):
 def check_sensor_temp( dt ):
 	with thermostatLock:
 		global currentTemp, priorCorrected, outside_temp, water_temp
-		global tempSensor,dhtTemp,openDoor,openDoorCheck
+		global tempSensor,dhtTemp,openDoor,openDoorCheck,measure_count
 		correctedTemp=20		
 		sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a50996ff")
 		outside_temp = sensor.get_temperature()
@@ -952,15 +952,23 @@ def check_sensor_temp( dt ):
 #check if temp is changed and if opendoor 			
 		
 		if abs( priorCorrected - correctedTemp ) >= TEMP_TOLERANCE:
-			if 	abs( priorCorrected - correctedTemp ) >= 1 and openDoor <= openDoorCheck:
-				print openDoor,openDoorCheck,priorCorrected,correctedTemp			
-				openDoor +=1			
-			else:	
-				print openDoor,openDoorCheck				
-				openDoor == 0				
+			measure_count+=1
+			if 	measure_count >= 2:
+				measure_count = 0;
 				log( LOG_LEVEL_STATE, CHILD_DEVICE_TEMP, MSG_SUBTYPE_TEMPERATURE, str( currentTemp ) )	
 				priorCorrected = correctedTemp
 				currentTemp = round( correctedTemp, 1 )	
+		else:
+			measure_count=0
+#			if 	abs( priorCorrected - correctedTemp ) >= 1 and openDoor <= openDoorCheck:
+#				print openDoor,openDoorCheck,priorCorrected,correctedTemp			
+#				openDoor +=1			
+#			else:	
+#				print openDoor,openDoorCheck				
+#				openDoor == 0				
+#				log( LOG_LEVEL_STATE, CHILD_DEVICE_TEMP, MSG_SUBTYPE_TEMPERATURE, str( currentTemp ) )	
+#				priorCorrected = correctedTemp
+#				currentTemp = round( correctedTemp, 1 )	
 
 		currentLabel.text = "[b]" + str( currentTemp ) + scaleUnits + "[/b]"
 		altCurLabel.text  = currentLabel.text
