@@ -1159,8 +1159,8 @@ class ThermostatApp( App ):
 		wimg.size_hint = ( None, None )
 		wimg.pos = ( 5, 400 )
 
-		heatControl.size  = ( 130, 130 )
-		heatControl.pos = ( 650, 290 )
+		heatControl.size  = ( 130, 60 )
+		heatControl.pos = ( 651, 360 )
 
 		statusLabel.pos = ( 370, 225 )
 
