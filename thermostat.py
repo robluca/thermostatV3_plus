@@ -135,6 +135,7 @@ CHILD_DEVICE_NODE				= "node"
 CHILD_DEVICE_UICONTROL_HEAT			= "heatControl"
 CHILD_DEVICE_UICONTROL_FAN			= "fanControl"
 CHILD_DEVICE_UICONTROL_HOLD			= "holdControl"
+CHILD_DEVICE_UICONTROL_TPLUS			= "tempPlus"
 CHILD_DEVICE_UICONTROL_SLIDER			= "tempSlider"
 CHILD_DEVICE_WEATHER_FCAST_TODAY		= "weatherForecastToday"
 CHILD_DEVICE_WEATHER_FCAST_TOMO			= "weatherForecastTomorrow"
@@ -570,7 +571,37 @@ holdControl = ToggleButton( text="[b]Hold[/b]",
 				markup=True, 
 				size_hint = ( None, None )
 				)
+#tempPlus = Button( text="[b]+[/b]", font_size = 24, markup=True,	size_hint = ( None, None ) )
 
+tempPlus = Button( text="", 
+				markup=True, 
+				size_hint = ( None, None ),
+				font_size="30sp",
+				border = (0,0,0,0),
+				background_normal= "web/images/plus.png",
+				background_down = "web/images/plus_1.png",
+				color = (1,1,1,1)
+				)
+				
+tempMinus = Button( text="", 
+				markup=True, 
+				size_hint = ( None, None ),
+				font_size="30sp",
+				border = (0,0,0,0),
+				background_normal= "web/images/minus.png",
+				background_down = "web/images/minus_1.png",
+				color = (1,1,1,1)
+				)
+
+rebootBtn = Button( text="[b]Reboot[/b]", 
+				markup=True, 
+				size_hint = ( None, None ),
+				font_size="30sp",
+				border = (0,0,0,0),
+				background_normal= "web/images/button_1.png",
+				background_down = "web/images/button_11.png",
+				color = (1,1,1,1)
+				)				
 setControlState( holdControl, "normal" if not( state.exists( "state" ) ) else state.get( "state" )[ "holdControl" ] )
 
 
@@ -923,17 +954,19 @@ def control_callback( control ):
 			reloadSchedule()						
 
 # Check the current sensor temperature
+		
 def check_sensor_temp( dt ):
 	with thermostatLock:
 		global currentTemp, priorCorrected, outside_temp, water_temp
 		global tempSensor,dhtTemp,openDoor,openDoorCheck,measure_count
-		correctedTemp=20		
+		correctedTemp=20
+		water_temp=20
 		sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a50996ff")
 		outside_temp = sensor.get_temperature()
 		sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a4f7beff")
 		water_temp = sensor.get_temperature()
-		for sensor in W1ThermSensor.get_available_sensors([W1ThermSensor.THERM_SENSOR_DS18B20]):
-			print("Sensor %s has temperature %.2f" % (sensor.id, sensor.get_temperature()))
+		#for sensor in W1ThermSensor.get_available_sensors([W1ThermSensor.THERM_SENSOR_DS18B20]):
+		#	print("Sensor %s has temperature %.2f" % (sensor.id, sensor.get_temperature()))
 		if dhtEnabled == 1 and dhtTemp <> 0:
 			getDhtSensorData()		
 			rawTemp = dhtTemp
@@ -986,7 +1019,39 @@ def check_sensor_temp( dt ):
 
 
 # This is called when the desired temp slider is updated:
+def start_inc_by_button(dt):
+	temp_inc_by_button(dt)
+	Clock.schedule_interval(temp_inc_by_button, 0.5)
+	
+def stop_inc_by_button(dt):
+	Clock.unschedule(temp_inc_by_button)
+	
+def temp_inc_by_button(dt):
+	tempSlider.value+=tempStep
+	update_set_temp(tempSlider, tempSlider.value)
+	
+def start_dec_by_button(dt):
+	temp_dec_by_button(dt)
+	Clock.schedule_interval(temp_dec_by_button, 0.5)
+	
+def stop_dec_by_button(dt):
+	Clock.unschedule(temp_dec_by_button)
+	
+def temp_dec_by_button(dt):
+	tempSlider.value-=tempStep
+	update_set_temp(tempSlider, tempSlider.value)
+	
+def restart():
+	log( LOG_LEVEL_STATE, CHILD_DEVICE_NODE, MSG_SUBTYPE_CUSTOM + "/restart", "Thermostat restarting...", single=True ) 
+	GPIO.cleanup()
 
+	if logFile is not None:
+		logFile.flush()
+		os.fsync( logFile.fileno() )
+		logFile.close()
+	
+	os.execl( sys.executable, 'python', __file__, *sys.argv[1:] )	# This does not return!!!
+	
 def update_set_temp( slider, value ):
 	with thermostatLock:
 		global setTemp
@@ -995,7 +1060,6 @@ def update_set_temp( slider, value ):
 		setLabel.text = "  Set\n[b]" + str( setTemp ) + scaleUnits + "[/b]"
 		if priorTemp != setTemp:
 			log( LOG_LEVEL_STATE, CHILD_DEVICE_UICONTROL_SLIDER, MSG_SUBTYPE_TEMPERATURE, str( setTemp ) )
-
 
 # Check the PIR motion sensor status
 
@@ -1033,15 +1097,15 @@ def check_pir( pin ):
 #Salvo i dati per il grafico
 def save_graph(dt):
 # save graph
-#conversione heatpin in temperatura 10=off 12=on
+#conversione heatpin in temperatura 2=off 10=on
 	global csvSaver
 	global csvTimeout
 	Clock.unschedule(csvSaver)
 	switchTemp = 10
 	if GPIO.input( heatPin ) == True:
-		switchTemp = 10
+		switchTemp = 2
 	else:
-		switchTemp = 12	
+		switchTemp = 10	
 	#scrivo il file csv con i dati 
 	out_file=open (("./web/graph/" + "thermostat.csv"),"a")
 	out_file.write (time.strftime("%Y/%m/%d %H:%M:%S", time.localtime())+", "+str(setTemp)+", "+str(currentTemp)+ ", " + str(switchTemp)+ "\n")
@@ -1086,6 +1150,34 @@ def show_minimal_ui( dt ):
 		screenMgr.current = "minimalUI"
 		log( LOG_LEVEL_DEBUG, CHILD_DEVICE_SCREEN, MSG_SUBTYPE_TEXT, "Minimal" )
 
+def show_uility_ui( dt ):
+	with thermostatLock:
+		uiScreen 	= Screen( name="thermostatUI" )
+		uiScreen.add_widget( thermostatUI )
+		utilityScreen 	= UtilityScreen( name="utilityUI" )
+		utilityUI 	= FloatLayout( size=( 800, 480 ) )
+		
+
+		with utilityUI.canvas.before:
+			Color( 0.0, 0.0, 0.0, 1 )
+			self.rect = Rectangle( size=( 800, 480 ), pos=utilityUI.pos )
+			Color(0,0,128,1)
+			self.rect = Rectangle( size=( 780, 460 ), pos=(20, 20 ))
+			Color( 0.0, 0.0, 0.0, 1 )
+			self.rect = Rectangle( size=( 760, 440 ), pos=(40, 40 ))
+			rebootBtn.pos = ( 390, 290 )
+			
+		utilityUI.add_widget( rebootBtn )
+		utilityScreen.add_widget( utilityUI )
+			
+		screenMgr = ScreenManager( transition=NoTransition())		# FadeTransition seems to have OpenGL bugs in Kivy Dev 1.9.1 and is unstable, so sticking with no transition for now
+		screenMgr.add_widget ( utilityScreen )
+		
+
+		layout = screenMgr
+		screenMgr.current = "utilityUI"
+		log( LOG_LEVEL_DEBUG, CHILD_DEVICE_SCREEN, MSG_SUBTYPE_TEXT, "Utility" )
+
 def light_off( dt ):
 	with thermostatLock:
 		GPIO.output( lightPin, GPIO.HIGH )
@@ -1119,6 +1211,28 @@ class MinimalScreen( Screen ):
 				log( LOG_LEVEL_DEBUG, CHILD_DEVICE_SCREEN, MSG_SUBTYPE_TEXT, "Full" )
 			return True
 
+class UtilityScreen( Screen ):
+	def on_touch_down( self, touch ):
+		if self.collide_point( *touch.pos ):
+			touch.grab( self )
+			return True
+
+	def on_touch_up( self, touch ):
+		global utilityUITimer
+		global lightOffTimer
+		if touch.grab_current is self:
+			touch.ungrab( self )
+			with thermostatLock:
+				Clock.unschedule( light_off )
+				if utilityUITimer != None:
+					Clock.unschedule( show_utility_ui )	
+				utilityUITimer = Clock.schedule_once( show_utility_ui, utilityUITimeout )
+				lighOffTimer = Clock.schedule_once( light_off, lightOff )
+				GPIO.output( lightPin, GPIO.LOW )
+				self.manager.current = "thermostatUI"
+				log( LOG_LEVEL_DEBUG, CHILD_DEVICE_SCREEN, MSG_SUBTYPE_TEXT, "Full" )
+			return True
+
 
 ##############################################################################
 #                                                                            #
@@ -1139,19 +1253,22 @@ class ThermostatApp( App ):
 			Color ( 0.0, 0.0, 0.0, 1 )
 			self.rect = Rectangle( size=( 800, 480 ), pos=thermostatUI.pos )
 			Color (0.3, 0.3,  0.4, 1.0)
-			self.rect =Rectangle (size=(132,132), pos=(650,68))
-			self.rect =Rectangle (size=(132,132), pos=(650,288))
+			self.rect =Rectangle (size=(132,62), pos=(650,68))
+			self.rect =Rectangle (size=(132,62), pos=(650,358))
 			Color (0.0, 0.0,  0.0, 1)
 			#self.rect =Rectangle (size=(284,244), pos=(283,213))
 		# Create the rest of the UI objects ( and bind them to callbacks, if necessary ):
 		
 		wimg = Image( source='web/images/logo.png' )
-				
+
 		heatControl.bind( on_press=control_callback )	
 		holdControl.bind( on_press=control_callback )
-		setLabel.bind( on_touch_down=dht_change)
+		rebootBtn.bind(on_press=restart)
+		tempPlus.bind(on_press=start_inc_by_button, on_release=stop_inc_by_button)
+		tempMinus.bind(on_press=start_dec_by_button, on_release=stop_dec_by_button)
+		#setLabel.bind( on_touch_down=dht_change)
 		
-		tempSlider.bind( on_touch_down=update_set_temp, on_touch_move=update_set_temp )
+		#tempSlider.bind( on_touch_down=update_set_temp, on_touch_move=update_set_temp )
 
    	# set sizing and position info
 		
@@ -1161,14 +1278,20 @@ class ThermostatApp( App ):
 
 		heatControl.size  = ( 130, 60 )
 		heatControl.pos = ( 651, 360 )
+		
+		tempPlus.size = ( 130, 60 )
+		tempPlus.pos = ( 651, 290 )
 
 		statusLabel.pos = ( 370, 225 )
 
 		tempSlider.size  = (400, 400 )
 		tempSlider.pos = ( 200, 50 )
 
-		holdControl.size  = ( 130, 130 )
-		holdControl.pos = ( 650, 70 )
+		tempMinus.size = ( 130, 60 )
+		tempMinus.pos = ( 651, 140 )
+
+		holdControl.size  = ( 130, 60 )
+		holdControl.pos = ( 651, 70 )
 
 		setLabel.pos = ( 680,220 )
 		
@@ -1201,6 +1324,8 @@ class ThermostatApp( App ):
 		# Add the UI elements to the thermostat UI layout:
 		thermostatUI.add_widget( wimg )
 		thermostatUI.add_widget( heatControl )
+		thermostatUI.add_widget( tempPlus )
+		thermostatUI.add_widget( tempMinus )
 		thermostatUI.add_widget( holdControl )
 		thermostatUI.add_widget( tempSlider )
 		thermostatUI.add_widget( currentLabel )
@@ -1261,7 +1386,11 @@ class ThermostatApp( App ):
 			csvSaver = Clock.schedule_once(save_graph, 3)
 			if pirEnabled:
 				Clock.schedule_interval( check_pir, pirCheckInterval )
-			
+
+# Utility Menu
+	
+
+				
 		# Start checking the temperature
 		Clock.schedule_interval( check_sensor_temp, tempCheckInterval )
 		if dhtEnabled == 1:
