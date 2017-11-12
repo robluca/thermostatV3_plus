@@ -957,10 +957,11 @@ def control_callback( control ):
 		
 def check_sensor_temp( dt ):
 	with thermostatLock:
-		global currentTemp, priorCorrected, outside_temp, water_temp
+		global currentTemp, priorCorrected, outside_temp, water_temp, setTemp
 		global tempSensor,dhtTemp,openDoor,openDoorCheck,measure_count
 		correctedTemp=20
 		water_temp=20
+		tempSlider.value = setTemp
 		sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a50996ff")
 		outside_temp = sensor.get_temperature()
 		sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a4f7beff")
@@ -1180,7 +1181,7 @@ def show_uility_ui( dt ):
 
 def light_off( dt ):
 	with thermostatLock:
-		GPIO.output( lightPin, GPIO.HIGH )
+		GPIO.output( lightPin, GPIO.LOW )
 		log( LOG_LEVEL_DEBUG, CHILD_DEVICE_SCREEN, MSG_SUBTYPE_TEXT, "Screen Off" )
 		
 def knob_init(dt):
@@ -1206,7 +1207,7 @@ class MinimalScreen( Screen ):
 					Clock.unschedule( show_minimal_ui )	
 				minUITimer = Clock.schedule_once( show_minimal_ui, minUITimeout )
 				lighOffTimer = Clock.schedule_once( light_off, lightOff )
-				GPIO.output( lightPin, GPIO.LOW )
+				GPIO.output( lightPin, GPIO.HIGH )
 				self.manager.current = "thermostatUI"
 				log( LOG_LEVEL_DEBUG, CHILD_DEVICE_SCREEN, MSG_SUBTYPE_TEXT, "Full" )
 			return True
@@ -1228,7 +1229,7 @@ class UtilityScreen( Screen ):
 					Clock.unschedule( show_utility_ui )	
 				utilityUITimer = Clock.schedule_once( show_utility_ui, utilityUITimeout )
 				lighOffTimer = Clock.schedule_once( light_off, lightOff )
-				GPIO.output( lightPin, GPIO.LOW )
+				GPIO.output( lightPin, GPIO.HIGH )
 				self.manager.current = "thermostatUI"
 				log( LOG_LEVEL_DEBUG, CHILD_DEVICE_SCREEN, MSG_SUBTYPE_TEXT, "Full" )
 			return True
