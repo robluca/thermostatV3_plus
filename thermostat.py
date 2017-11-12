@@ -602,6 +602,15 @@ rebootBtn = Button( text="[b]Reboot[/b]",
 				background_down = "web/images/button_11.png",
 				color = (1,1,1,1)
 				)				
+menuBtn = Button( text="[b]Menu[/b]", 
+				markup=True, 
+				size_hint = ( None, None ),
+				font_size="15sp",
+				border = (0,0,0,0),
+				background_normal= "web/images/button_round_off.png",
+				background_down = "web/images/button_round_on.png",
+				color = (1,1,1,1)
+				)				
 setControlState( holdControl, "normal" if not( state.exists( "state" ) ) else state.get( "state" )[ "holdControl" ] )
 
 
@@ -868,8 +877,8 @@ def restart():
 		logFile.flush()
 		os.fsync( logFile.fileno() )
 		logFile.close()
-
-	os.execl( sys.executable, 'python', __file__, *sys.argv[1:] )	# This does not return!!!
+	os.system('sudo shutdown -r now')
+	#os.execl( sys.executable, 'python', __file__, *sys.argv[1:] )	# This does not return!!!
 
 
 def setLogLevel( msg ):
@@ -1042,17 +1051,9 @@ def temp_dec_by_button(dt):
 	tempSlider.value-=tempStep
 	update_set_temp(tempSlider, tempSlider.value)
 	
-def restart():
-	log( LOG_LEVEL_STATE, CHILD_DEVICE_NODE, MSG_SUBTYPE_CUSTOM + "/restart", "Thermostat restarting...", single=True ) 
-	GPIO.cleanup()
-
-	if logFile is not None:
-		logFile.flush()
-		os.fsync( logFile.fileno() )
-		logFile.close()
-	
-	os.execl( sys.executable, 'python', __file__, *sys.argv[1:] )	# This does not return!!!
-	
+def restart_app(dt):
+	restart()
+		
 def update_set_temp( slider, value ):
 	with thermostatLock:
 		global setTemp
@@ -1153,29 +1154,6 @@ def show_minimal_ui( dt ):
 
 def show_uility_ui( dt ):
 	with thermostatLock:
-		uiScreen 	= Screen( name="thermostatUI" )
-		uiScreen.add_widget( thermostatUI )
-		utilityScreen 	= UtilityScreen( name="utilityUI" )
-		utilityUI 	= FloatLayout( size=( 800, 480 ) )
-		
-
-		with utilityUI.canvas.before:
-			Color( 0.0, 0.0, 0.0, 1 )
-			self.rect = Rectangle( size=( 800, 480 ), pos=utilityUI.pos )
-			Color(0,0,128,1)
-			self.rect = Rectangle( size=( 780, 460 ), pos=(20, 20 ))
-			Color( 0.0, 0.0, 0.0, 1 )
-			self.rect = Rectangle( size=( 760, 440 ), pos=(40, 40 ))
-			rebootBtn.pos = ( 390, 290 )
-			
-		utilityUI.add_widget( rebootBtn )
-		utilityScreen.add_widget( utilityUI )
-			
-		screenMgr = ScreenManager( transition=NoTransition())		# FadeTransition seems to have OpenGL bugs in Kivy Dev 1.9.1 and is unstable, so sticking with no transition for now
-		screenMgr.add_widget ( utilityScreen )
-		
-
-		layout = screenMgr
 		screenMgr.current = "utilityUI"
 		log( LOG_LEVEL_DEBUG, CHILD_DEVICE_SCREEN, MSG_SUBTYPE_TEXT, "Utility" )
 
@@ -1213,26 +1191,7 @@ class MinimalScreen( Screen ):
 			return True
 
 class UtilityScreen( Screen ):
-	def on_touch_down( self, touch ):
-		if self.collide_point( *touch.pos ):
-			touch.grab( self )
-			return True
-
-	def on_touch_up( self, touch ):
-		global utilityUITimer
-		global lightOffTimer
-		if touch.grab_current is self:
-			touch.ungrab( self )
-			with thermostatLock:
-				Clock.unschedule( light_off )
-				if utilityUITimer != None:
-					Clock.unschedule( show_utility_ui )	
-				utilityUITimer = Clock.schedule_once( show_utility_ui, utilityUITimeout )
-				lighOffTimer = Clock.schedule_once( light_off, lightOff )
-				GPIO.output( lightPin, GPIO.HIGH )
-				self.manager.current = "thermostatUI"
-				log( LOG_LEVEL_DEBUG, CHILD_DEVICE_SCREEN, MSG_SUBTYPE_TEXT, "Full" )
-			return True
+	pass
 
 
 ##############################################################################
@@ -1245,6 +1204,7 @@ class ThermostatApp( App ):
 
 	def build( self ):
 		global screenMgr
+		screenMgr = ScreenManager( transition=NoTransition())		# FadeTransition seems to have OpenGL bugs in Kivy Dev 1.9.1 and is unstable, so sticking with no transition for now
 
 		# Set up the thermostat UI layout:
 		thermostatUI = FloatLayout( size=( 800, 480 ) )
@@ -1264,10 +1224,11 @@ class ThermostatApp( App ):
 
 		heatControl.bind( on_press=control_callback )	
 		holdControl.bind( on_press=control_callback )
-		rebootBtn.bind(on_press=restart)
+		rebootBtn.bind(on_press=restart_app)
 		tempPlus.bind(on_press=start_inc_by_button, on_release=stop_inc_by_button)
 		tempMinus.bind(on_press=start_dec_by_button, on_release=stop_dec_by_button)
-		#setLabel.bind( on_touch_down=dht_change)
+		menuBtn.bind(on_press=show_uility_ui, on_release=show_uility_ui)
+		setLabel.bind( on_touch_down=dht_change)
 		
 		#tempSlider.bind( on_touch_down=update_set_temp, on_touch_move=update_set_temp )
 
@@ -1302,6 +1263,8 @@ class ThermostatApp( App ):
 		dateLabel.pos = ( 165, 400 )
 		timeLabel.pos = ( 150,370 )
 		
+		menuBtn.size  = ( 60, 60 )
+		menuBtn.pos = ( 580, 40 )
 		
 		weatherImg.pos = ( 300, 70 )
 		weatherSummaryLabel.pos = ( 450, 85 )
@@ -1348,14 +1311,14 @@ class ThermostatApp( App ):
 		#thermostatUI.add_widget( forecastTomoSummaryLabel )
 		thermostatUI.add_widget( waterTempHeading )
 		thermostatUI.add_widget( waterTempLabel )
+		thermostatUI.add_widget( menuBtn )
 		
-
 		layout = thermostatUI
 
 		# Minimap UI initialization
+		uiScreen 	= Screen( name="thermostatUI" )
 
 		if minUIEnabled:
-			uiScreen 	= Screen( name="thermostatUI" )
 			uiScreen.add_widget( thermostatUI )
 
 			minScreen 	= MinimalScreen( name="minimalUI" )
@@ -1377,7 +1340,6 @@ class ThermostatApp( App ):
 				dht_label.pos = ( 400, 40)
 				minUI.add_widget(dht_label)
 				
-			screenMgr = ScreenManager( transition=NoTransition())		# FadeTransition seems to have OpenGL bugs in Kivy Dev 1.9.1 and is unstable, so sticking with no transition for now
 			screenMgr.add_widget ( uiScreen )
 			screenMgr.add_widget ( minScreen )
 
@@ -1388,9 +1350,24 @@ class ThermostatApp( App ):
 			if pirEnabled:
 				Clock.schedule_interval( check_pir, pirCheckInterval )
 
-# Utility Menu
-	
+#menu screen
+		utilityUI 	= FloatLayout( size=( 800, 480 ) )
+		
 
+		with utilityUI.canvas.before:
+			Color( 0.0, 0.0, 0.0, 1 )
+			self.rect = Rectangle( size=( 800, 480 ), pos=(0, 0))
+			Color(0,0,128,1)
+			self.rect = Rectangle( size=( 780, 460 ), pos=(10, 10 ))
+			Color( 0.0, 0.0, 0.0, 1 )
+			self.rect = Rectangle( size=( 770, 450 ), pos=(15, 15 ))
+			rebootBtn.pos = ( 390, 290 )
+			rebootBtn.size = (120, 70)
+			
+		utilityUI.add_widget( rebootBtn )
+		utilityScreen 	= UtilityScreen( name="utilityUI" )
+		utilityScreen.add_widget( utilityUI )
+		screenMgr.add_widget ( utilityScreen )
 				
 		# Start checking the temperature
 		Clock.schedule_interval( check_sensor_temp, tempCheckInterval )
