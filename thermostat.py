@@ -1,3 +1,5 @@
+# coding: latin-1 
+
 ### BEGIN LICENSE
 # Copyright (c) 2016 Jpnos <jpnos@gmx.com>
 
@@ -284,7 +286,7 @@ for i in range( len( CHILD_DEVICES ) ):
 # Various temperature settings:
 
 tempScale		= settings.get( "scale" )[ "tempScale" ]
-scaleUnits 	  	= "c" if tempScale == "metric" else "f"
+scaleUnits 	  	= u"\xb0" if tempScale == "metric" else "f"
 precipUnits		= " mm" if tempScale == "metric" else '"'
 precipFactor		= 1.0 if tempScale == "metric" else 0.0393701
 precipRound		= 0 if tempScale == "metric" else 1
@@ -307,8 +309,8 @@ out_temp		= 0.0
 temp_vis 		= 0 
 
 minUIEnabled		= 0    if not( settings.exists( "thermostat" ) ) else settings.get( "thermostat" )[ "minUIEnabled" ]
-minUITimeout		= 3    if not( settings.exists( "thermostat" ) ) else settings.get( "thermostat" )[ "minUITimeout" ]
-lightOff		= 10   if not( settings.exists( "thermostat" ) ) else settings.get( "thermostat" )[ "lightOff" ]
+minUITimeout		= 20    if not( settings.exists( "thermostat" ) ) else settings.get( "thermostat" )[ "minUITimeout" ]
+lightOff		= 60   if not( settings.exists( "thermostat" ) ) else settings.get( "thermostat" )[ "lightOff" ]
 
 minUITimer		= None
 csvSaver		= None
@@ -317,7 +319,7 @@ csvSaver		= None
 csvTimeout		= 300 if not( settings.exists( "thermostat" ) ) else settings.get( "thermostat" )[ "saveCsv" ] 
 
 log( LOG_LEVEL_INFO, CHILD_DEVICE_NODE, MSG_SUBTYPE_CUSTOM + "/settings/temperature/tempScale", str( tempScale ), timestamp=False )
-log( LOG_LEVEL_INFO, CHILD_DEVICE_NODE, MSG_SUBTYPE_CUSTOM + "/settings/temperature/scaleUnits", str( scaleUnits ), timestamp=False )
+log( LOG_LEVEL_INFO, CHILD_DEVICE_NODE, MSG_SUBTYPE_CUSTOM + "/settings/temperature/scaleUnits", scaleUnits, timestamp=False )
 log( LOG_LEVEL_INFO, CHILD_DEVICE_NODE, MSG_SUBTYPE_CUSTOM + "/settings/temperature/precipUnits", str( precipUnits ), timestamp=False )
 log( LOG_LEVEL_INFO, CHILD_DEVICE_NODE, MSG_SUBTYPE_CUSTOM + "/settings/temperature/precipFactor", str( precipFactor ), timestamp=False )
 log( LOG_LEVEL_INFO, CHILD_DEVICE_NODE, MSG_SUBTYPE_CUSTOM + "/settings/temperature/sensorUnits", str( sensorUnits ), timestamp=False )
@@ -1407,6 +1409,7 @@ def setScheduledTemp( temp ):
 	with thermostatLock:
 		global setTemp,dhtEnabled
 		actual.put( "state", setTemp=round(temp,1), dhtEnabled=dhtEnabled,heatControl=heatControl.state, fanControl=fanControl.state, holdControl=holdControl.state)		
+		print ("setScheduledTemp at ",temp)
 		if holdControl.state == "normal":
 			setTemp = round( temp, 1 )
 			setLabel.text = "  Set\n[b]" + str( setTemp ) + scaleUnits + "[/b]"
