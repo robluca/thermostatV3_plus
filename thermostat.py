@@ -296,6 +296,8 @@ windUnits		= " km/h" if tempScale == "metric" else " mph"
 
 TEMP_TOLERANCE	= 0.1 if tempScale == "metric" else 0.18
 currentTemp		= 20.0 if tempScale == "metric" else 72.0
+outside_temp    = 20.0 if tempScale == "metric" else 72.0
+water_temp		= 20.0 if tempScale == "metric" else 72.0
 priorCorrected	= -100.0
 # openDoor e openDoorcheck for stop sistem for a time set in thermostat_setting and temperature change quickly of 1 C degrees
 openDoor		= 21 if not( state.exists( "thermostat" ) ) else int((state.get( "thermostat" )[ "openDoor" ]/state.get( "thermostat" )[ "tempCheckInterval" ])+1)
@@ -515,10 +517,10 @@ def dhtoutRead():
 		out_humidity=0
 		
 def getDhtSensorData():
-	global dhtTemp,dhtEnabled,dhtTest,dhtSchedule,out_temp,out_humidity,dhtUm 
-	out_humidity, out_temp = Adafruit_DHT.read_retry(Adafruit_DHT.DHT22, dhtoutWiredPin)
+	global dhtTemp,dhtEnabled,dhtTest,dhtSchedule,out_temp,in_humidity,dhtUm 
+	in_humidity, out_temp = Adafruit_DHT.read_retry(Adafruit_DHT.DHT22, dhtoutWiredPin)
 	dhtTemp=out_temp
-	dhtUm=out_humidity
+	dhtUm=in_humidity
 	dht_label.text = "Dht : T: "+str(dhtTemp)+" c , Ur: "+str(dhtUm)+" %"
 	#dhtEnabled 	= 1
 	dhtTest		= 0
@@ -528,7 +530,7 @@ def getDhtSensorData():
 
 	#out_humidity = str(out_humidity)
 	#out_temp = str(out_temp)
-	print out_temp,out_humidity
+	print out_temp,in_humidity
 ##############################################################################
 #                                                                            #
 #       UI Controls/Widgets                                                  #
@@ -618,7 +620,6 @@ setControlState( holdControl, "normal" if not( state.exists( "state" ) ) else st
 
 
 def get_status_string():
-	global out_humidity
 	with thermostatLock:
 		temperature = 0
 		if holdControl.state == "down":
@@ -644,7 +645,6 @@ def get_status_string():
 			testHeat = True
 
 		setLabel.color = (1,1,1,1)
-	#"Ur: "+str(int(round(out_humidity,0))+
 		return "   [b]Ur: " +str(round(dhtUm,1))+"%[/b]\n  " + \
 			   "      T Imp:    " +str(temperature)+"c \n  "+\
 			   "      Heat:      " + ( "[i][b][color=ff3333]On[/b][/i][/color]" if testHeat else "Off" ) + "\n  "+\
@@ -719,7 +719,7 @@ def get_cardinal_direction( heading ):
 	
 def display_current_weather( dt ):
 	with weatherLock:
-		global out_temp,temp_vis
+		global out_temp,temp_vis, outside_temp, out_humidity
 		interval = weatherRefreshInterval
 		try:
 			weather = get_weather( weatherURLCurrent )
@@ -735,7 +735,7 @@ def display_current_weather( dt ):
 					
 				else:
 					temp_vis = str(round(out_temp,1))
-					um_vis = str(int(round(out_humidity,0)))
+					out_humidity = str(int(round(out_humidity,0)))
 					print temp_vis
 			elif dhtoutEnabled == 1 and dhtoutWired == 1:
 				getDhtSensorData()
@@ -743,16 +743,16 @@ def display_current_weather( dt ):
 				if out_temp == 0 or out_temp == None:				
 					temp_vis = str( int( round( weather[ "main" ][ "temp" ], 0 ) ) )
 				else:
-					temp_vis = str(round(out_temp,1))
-					um_vis = str(int(round(out_humidity,0)))
+					temp_vis =  str(round(out_temp,1))
+					out_humidity = str(int(round(out_humidity,0)))
 					print temp_vis
 			else:
-				temp_vis = str( int( round( weather[ "main" ][ "temp" ], 0 ) ) )
-				um_vis = str( weather[ "main" ][ "humidity" ] )
-				
+				temp_vis = str(round(outside_temp,1)) #outside_temp is coming from external sensor #was# str( int( round( weather[ "main" ][ "temp" ], 0 ) ) )
+				out_humidity = str( weather[ "main" ][ "humidity" ] )
+
 			weatherDetailsLabel.text = "\n".join( (
 				"Temp :   " + temp_vis + " " +scaleUnits,
-				"    Ur :   " + um_vis + "%",
+				"    Ur :   " + out_humidity + "%",
 				#"Vento:       " + str( int( round( weather[ "wind" ][ "speed" ] * windFactor ) ) ) + windUnits + " " + get_cardinal_direction( weather[ "wind" ][ "deg" ] ),
 				#"Nuvole:     " + str( weather[ "clouds" ][ "all" ] ) + "%",
 			) )
@@ -969,14 +969,15 @@ def control_callback( control ):
 def check_sensor_temp( dt ):
 	with thermostatLock:
 		global currentTemp, priorCorrected, outside_temp, water_temp, setTemp
-		global tempSensor,dhtTemp,openDoor,openDoorCheck,measure_count
+		global tempSensor,dhtTemp,openDoor,openDoorCheck,measure_count,homeTemp
 		correctedTemp=20
-		water_temp=20
 		tempSlider.value = setTemp
 		sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a50996ff")
 		outside_temp = sensor.get_temperature()
 		sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a4f7beff")
 		water_temp = sensor.get_temperature()
+		sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a4fabeff")
+		homeTemp = sensor.get_temperature()
 		#for sensor in W1ThermSensor.get_available_sensors([W1ThermSensor.THERM_SENSOR_DS18B20]):
 		#	print("Sensor %s has temperature %.2f" % (sensor.id, sensor.get_temperature()))
 		if dhtEnabled == 1 and dhtTemp <> 0:
@@ -989,20 +990,24 @@ def check_sensor_temp( dt ):
 		else:
 			if tempSensor is not None:
 				getDhtSensorData()		
-				rawTemp = dhtTemp
+				rawTemp = homeTemp
 #				rawTemp = tempSensor.get_temperature( sensorUnits )
 				correctedTemp = ( ( ( rawTemp - freezingMeasured ) * referenceRange ) / measuredRange ) + freezingPoint + correctSensor
 				log( LOG_LEVEL_DEBUG, CHILD_DEVICE_TEMP, MSG_SUBTYPE_CUSTOM + "/raw", str( rawTemp ) )
 				log( LOG_LEVEL_DEBUG, CHILD_DEVICE_TEMP, MSG_SUBTYPE_CUSTOM + "/corrected", str( correctedTemp ) )
+				#Update out temp that is coming from external sensor
+				weatherDetailsLabel.text = "\n".join((
+					"Temp :   " + str(round(outside_temp,1)) + " " +scaleUnits,
+					"    Ur :   " + out_humidity + "%",
+					#"Vento:       " + str( int( round( weather[ "wind" ][ "speed" ] * windFactor ) ) ) + windUnits + " " + get_cardinal_direction( weather[ "wind" ][ "deg" ] ),
+					#"Nuvole:     " + str( weather[ "clouds" ][ "all" ] ) + "%",
+				))
 #check if temp is changed and if opendoor 			
 		
 		if abs( priorCorrected - correctedTemp ) >= TEMP_TOLERANCE:
-			measure_count+=1
-			if 	measure_count >= 2:
-				measure_count = 0;
-				log( LOG_LEVEL_STATE, CHILD_DEVICE_TEMP, MSG_SUBTYPE_TEMPERATURE, str( currentTemp ) )	
-				priorCorrected = correctedTemp
-				currentTemp = round( correctedTemp, 1 )	
+			log( LOG_LEVEL_STATE, CHILD_DEVICE_TEMP, MSG_SUBTYPE_TEMPERATURE, str( currentTemp ) )	
+			priorCorrected = correctedTemp
+			currentTemp = round( correctedTemp, 1 )	
 		else:
 			measure_count=0
 #			if 	abs( priorCorrected - correctedTemp ) >= 1 and openDoor <= openDoorCheck:
@@ -1103,7 +1108,7 @@ def save_graph(dt):
 # save graph
 #conversione heatpin in temperatura 2=off 10=on
 	global csvSaver
-	global csvTimeout
+	global csvTimeout, water_temp
 	Clock.unschedule(csvSaver)
 	switchTemp = 10
 	if GPIO.input( heatPin ) == True:
@@ -1112,7 +1117,7 @@ def save_graph(dt):
 		switchTemp = 10	
 	#scrivo il file csv con i dati 
 	out_file=open (("./web/graph/" + "thermostat.csv"),"a")
-	out_file.write (time.strftime("%Y/%m/%d %H:%M:%S", time.localtime())+", "+str(setTemp)+", "+str(currentTemp)+ ", " + str(switchTemp)+ "\n")
+	out_file.write (time.strftime("%Y/%m/%d %H:%M:%S", time.localtime())+", "+str(setTemp)+", "+str(currentTemp)+ ", " + str(switchTemp) + ", " + str(water_temp) + "\n")
 	out_file.close()
 	timeInit=time.time()
 	
@@ -1499,7 +1504,7 @@ class WebInterface(object):
 			html = html.replace( "@@minTemp@@", str( minTemp ) )
 			html = html.replace( "@@maxTemp@@", str( maxTemp ) )
 			html = html.replace( "@@tempStep@@", str( tempStep ) )
-			html = html.replace( "@@temp_extern@@",str( temp_vis ) )
+			html = html.replace( "@@temp_extern@@",str( outside_temp ) )
 		
 			status = statusLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
 			status = status.replace( "[color=00ff00]", '<font color="red">' ).replace( "[/color]", '</font>' ) 

@@ -29,12 +29,12 @@
     title: 'Grafico temperature',
     ylabel: 'Temperature (C)',
     xlabel: 'Time',
-    labels:["Date","set","letta","switch"],
+    labels:["Date","set","letta","switch","Temp Acqua"],
     labelsSeparateLines: true,
     legend: 'always',
     yRangePad: '50',
     xRangePad: '30',
-    colors: ['#284785', '#FF1111','#000000' ],
+    //colors: ['#284785', '#FF1111','#000000'],
     labelsDiv: document.getElementById("labels")
     }
     
@@ -43,7 +43,7 @@
 <tr>
 <td valign=top align=center><div id="testo" style="width:800px; height:130px; margin: 0 auto; font-size:10px; text-align: left">
 <p>
-switch varia da 10 = off a 12 = on<br><br>
+switch varia da 2 = off a 10 = on<br><br>
 Chart interattiva.<br>
 Muovi il mouse per evidenziare i singoli valori.<br>
 Clicca e trascina per selezionare ed effettuare uno zoom sull'area selezionata.<br>
