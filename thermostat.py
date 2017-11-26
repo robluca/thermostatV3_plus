@@ -973,9 +973,9 @@ def check_sensor_temp( dt ):
 		correctedTemp=20
 		tempSlider.value = setTemp
 		sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a50996ff")
-		outside_temp = sensor.get_temperature()
+		outside_temp = round(sensor.get_temperature(),1)
 		sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a4f7beff")
-		water_temp = sensor.get_temperature()
+		water_temp = round(sensor.get_temperature(),1)
 		sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a4fabeff")
 		homeTemp = sensor.get_temperature()
 		#for sensor in W1ThermSensor.get_available_sensors([W1ThermSensor.THERM_SENSOR_DS18B20]):
@@ -1505,6 +1505,7 @@ class WebInterface(object):
 			html = html.replace( "@@maxTemp@@", str( maxTemp ) )
 			html = html.replace( "@@tempStep@@", str( tempStep ) )
 			html = html.replace( "@@temp_extern@@",str( outside_temp ) )
+			html = html.replace( "@@water_temp@@",str( water_temp ) )
 		
 			status = statusLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
 			status = status.replace( "[color=00ff00]", '<font color="red">' ).replace( "[/color]", '</font>' ) 

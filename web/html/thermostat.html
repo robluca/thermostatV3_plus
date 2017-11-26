@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta http-equiv="refresh" content="60" />
-  <meta id="viewport" name="viewport" content="initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta id="viewport" name="viewport" content="initial-scale=1.0, minimum-scale=0.5, maximum-scale=2.0, user-scalable=yes" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>Thermostat Web Interface</title>
   <link href="images/Apple_ThermostatIcon_120x120.png" rel="apple-touch-icon" sizes="120x120" />
@@ -22,7 +22,7 @@
 		document.getElementById("set_Temp").value=@@temp@@
 		document.getElementById("outTemp").value=@@temp_extern@@
 		document.getElementById("temp").value=@@temp@@
-	});  
+		document.getElementById("waterTemp").value=@@water_temp@@});  
 	$(function() {
 	/*$( "#slider-vertical" ).slider({
 	  orientation: "vertical",
@@ -156,7 +156,7 @@
 					<tr>					
 					<td width="33%" align="center">
        						<div class="demo" style="font-size:20px;">
-          						<p><b>- Temp in-</b> </p>
+          						<p><b>- Temp in -</b> </p>
             					<input class="knob " id="current" data-min = "15" data-max = "35" data-thickness = ".4" data-fgColor="orangered" readonly>
         					</div>
 					</td>
@@ -168,12 +168,20 @@
         					</div>
 					</td>
 					<td width="33%" align="center">
-							<div class="demo" style="font-size:20px">
+							<div class="demo" style="font-size:px">
             						<p><b> - Temp out - </b></p>
             					
-            					<input class="knob" id="outTemp" data-min = "-30" data-max="45" data-fgColor="turquoise" data-thickness=".4" readonly >
+            					<input class="knob" id="outTemp" data-min = "-30" data-max="45" data-fgColor="turquoise" data-thickness=".4" data-width="100" readonly >
         					</div>
 					</td>
+					<td width="33%" align="center">
+							<div class="demo" style="font-size:20px">
+            						<p><b>  - Water Temp - </b></p>
+            					
+            					<input class="knob" id="waterTemp" data-min = "0" data-max= "100" data-step=".1" data-fgColor="chartreuse" data-thickness=".4">
+        					</div>
+					</td>
+
 					</tr>
 			</table>
 			<table width="640px" rules="none"   >
