@@ -597,7 +597,16 @@ tempMinus = Button( text="",
 				color = (1,1,1,1)
 				)
 
-rebootBtn = Button( text="[b]Reboot[/b]", 
+rebootBtn = Button( text="      [b]Riavvia[/b]", 
+				markup=True, 
+				size_hint = ( None, None ),
+				font_size="30sp",
+				border = (0,0,0,0),
+				background_normal= "web/images/button_1.png",
+				background_down = "web/images/button_11.png",
+				color = (1,1,1,1)
+				)				
+backBtn = Button( text="      [b]Indietro[/b]", 
 				markup=True, 
 				size_hint = ( None, None ),
 				font_size="30sp",
@@ -1149,7 +1158,8 @@ def dht_change(test,data):
 					Clock.unschedule(dht_load_wired)
 				reloadSchedule()
 				print "dht Disabled"
-	print "change dht"	,x_pos	,y_pos			
+	print "change dht"	,x_pos	,y_pos
+	reset_light(test)
 			
 # Minimal UI Display functions and classes
 #shell.shell(has_input=False, record_output=True, record_errors=True, strip_empty=True)
@@ -1164,6 +1174,11 @@ def show_uility_ui( dt ):
 		screenMgr.current = "utilityUI"
 		log( LOG_LEVEL_DEBUG, CHILD_DEVICE_SCREEN, MSG_SUBTYPE_TEXT, "Utility" )
 
+def show_full_ui( dt ):
+	with thermostatLock:
+		screenMgr.current = "thermostatUI"
+		log( LOG_LEVEL_DEBUG, CHILD_DEVICE_SCREEN, MSG_SUBTYPE_TEXT, "Full" )
+
 def light_off( dt ):
 	with thermostatLock:
 		GPIO.output( lightPin, GPIO.LOW )
@@ -1174,6 +1189,14 @@ def knob_init(dt):
 	tempSlider.max=int(maxTemp)
 	#tempSlider.step = 0.5#int(tempStep)/10
 	tempSlider.value = setTemp	
+
+def reset_light(dt):
+	global lightOffTimer
+	with thermostatLock:
+		Clock.unschedule( light_off )
+		lighOffTimer = Clock.schedule_once( light_off, lightOff )
+		GPIO.output( lightPin, GPIO.HIGH )
+		log( LOG_LEVEL_DEBUG, CHILD_DEVICE_SCREEN, MSG_SUBTYPE_TEXT, "LightReset" )
 
 class MinimalScreen( Screen ):
 	def on_touch_down( self, touch ):
@@ -1232,6 +1255,8 @@ class ThermostatApp( App ):
 		heatControl.bind( on_press=control_callback )	
 		holdControl.bind( on_press=control_callback )
 		rebootBtn.bind(on_press=restart_app)
+		backBtn.bind(on_release=show_full_ui)
+
 		tempPlus.bind(on_press=start_inc_by_button, on_release=stop_inc_by_button)
 		tempMinus.bind(on_press=start_dec_by_button, on_release=stop_dec_by_button)
 		menuBtn.bind(on_press=show_uility_ui, on_release=show_uility_ui)
@@ -1368,10 +1393,13 @@ class ThermostatApp( App ):
 			self.rect = Rectangle( size=( 780, 460 ), pos=(10, 10 ))
 			Color( 0.0, 0.0, 0.0, 1 )
 			self.rect = Rectangle( size=( 770, 450 ), pos=(15, 15 ))
-			rebootBtn.pos = ( 390, 290 )
-			rebootBtn.size = (120, 70)
+			rebootBtn.pos = ( 540, 160 )
+			rebootBtn.size = (220, 80)
+			backBtn.pos = ( 540, 60 )
+			backBtn.size = (220, 80)
 			
 		utilityUI.add_widget( rebootBtn )
+		utilityUI.add_widget( backBtn )
 		utilityScreen 	= UtilityScreen( name="utilityUI" )
 		utilityScreen.add_widget( utilityUI )
 		screenMgr.add_widget ( utilityScreen )
