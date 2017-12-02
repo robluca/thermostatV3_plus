@@ -985,10 +985,10 @@ def check_sensor_temp( dt ):
 		outside_temp = round(sensor.get_temperature(),1)
 		sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a4f7beff")
 		water_temp = round(sensor.get_temperature(),1)
-		sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a4fabeff")
+		sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "041656f614ff")
 		homeTemp = sensor.get_temperature()
 		#for sensor in W1ThermSensor.get_available_sensors([W1ThermSensor.THERM_SENSOR_DS18B20]):
-		#	print("Sensor %s has temperature %.2f" % (sensor.id, sensor.get_temperature()))
+			#print("Sensor %s has temperature %.2f" % (sensor.id, sensor.get_temperature()))
 		if dhtEnabled == 1 and dhtTemp <> 0:
 			getDhtSensorData()		
 			rawTemp = dhtTemp
@@ -1172,6 +1172,7 @@ def show_minimal_ui( dt ):
 def show_uility_ui( dt ):
 	with thermostatLock:
 		screenMgr.current = "utilityUI"
+		print "show_uility_ui"
 		log( LOG_LEVEL_DEBUG, CHILD_DEVICE_SCREEN, MSG_SUBTYPE_TEXT, "Utility" )
 
 def show_full_ui( dt ):
@@ -1418,6 +1419,7 @@ class ThermostatApp( App ):
 		
 		Clock.schedule_once( display_forecast_weather, 5 )
 		Clock.schedule_once( display_current_weather, 4 )
+		Clock.schedule_once( light_off, lightOff )
 		return layout
 
 
