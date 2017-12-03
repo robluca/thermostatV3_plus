@@ -597,16 +597,26 @@ tempMinus = Button( text="",
 				color = (1,1,1,1)
 				)
 
-rebootBtn = Button( text="      [b]Riavvia[/b]", 
+closeBtn = Button( text="             [b]Chiudi App[/b]", 
 				markup=True, 
 				size_hint = ( None, None ),
-				font_size="30sp",
+				font_size="24sp",
 				border = (0,0,0,0),
 				background_normal= "web/images/button_1.png",
 				background_down = "web/images/button_11.png",
 				color = (1,1,1,1)
 				)				
-backBtn = Button( text="      [b]Indietro[/b]", 
+
+rebootBtn = Button( text="            [b]Riavvia Sist[/b]", 
+				markup=True, 
+				size_hint = ( None, None ),
+				font_size="24sp",
+				border = (0,0,0,0),
+				background_normal= "web/images/button_1.png",
+				background_down = "web/images/button_11.png",
+				color = (1,1,1,1)
+				)				
+backBtn = Button( text="          [b]Indietro[/b]", 
 				markup=True, 
 				size_hint = ( None, None ),
 				font_size="30sp",
@@ -880,8 +890,8 @@ def getVersion():
 	log( LOG_LEVEL_STATE, CHILD_DEVICE_NODE, MSG_SUBTYPE_VERSION, THERMOSTAT_VERSION )
 
 
-def restart():
-	log( LOG_LEVEL_STATE, CHILD_DEVICE_NODE, MSG_SUBTYPE_CUSTOM + "/restart", "Thermostat restarting...", single=True ) 
+def reboot(dt):
+	log( LOG_LEVEL_STATE, CHILD_DEVICE_NODE, MSG_SUBTYPE_CUSTOM + "/reboot", "System Reboot...", single=True ) 
 	GPIO.cleanup()
 
 	if logFile is not None:
@@ -902,13 +912,21 @@ def setLogLevel( msg ):
 	else:
 		log( LOG_LEVEL_ERROR, CHILD_DEVICE_NODE, MSG_SUBTYPE_CUSTOM + "/loglevel", "Invalid LogLevel: " + msg.payload ) 
 
-def restart_program():
-    """Restarts the current program.
-    Note: this function does not return. Any cleanup action (like
-    saving data) must be done before calling this function."""
-    python = sys.executable
-    os.execl(python, python, * sys.argv)
-    
+def close_program(dt):
+	log( LOG_LEVEL_STATE, CHILD_DEVICE_NODE, MSG_SUBTYPE_CUSTOM + "/close_program", "Thermostat closing...", single=True ) 
+	GPIO.cleanup()
+	GPIO.setmode( GPIO.BCM )
+	GPIO.setup( lightPin, GPIO.OUT )
+	GPIO.output( lightPin, GPIO.HIGH )
+
+	if logFile is not None:
+		logFile.flush()
+		os.fsync( logFile.fileno() )
+		logFile.close()
+
+	os.system('kill %d' % os.getpid())
+	#os.execl(sys.executable, 'python', __file__, *sys.argv[1:])
+	
 ##############################################################################
 #                                                                            #
 #       Thermostat Implementation                                            #
@@ -1066,9 +1084,6 @@ def stop_dec_by_button(dt):
 def temp_dec_by_button(dt):
 	tempSlider.value-=tempStep
 	update_set_temp(tempSlider, tempSlider.value)
-	
-def restart_app(dt):
-	restart()
 		
 def update_set_temp( slider, value ):
 	with thermostatLock:
@@ -1224,6 +1239,9 @@ class MinimalScreen( Screen ):
 class UtilityScreen( Screen ):
 	pass
 
+class ThermoScreen( Screen ):
+	pass
+
 
 ##############################################################################
 #                                                                            #
@@ -1255,12 +1273,13 @@ class ThermostatApp( App ):
 
 		heatControl.bind( on_press=control_callback )	
 		holdControl.bind( on_press=control_callback )
-		rebootBtn.bind(on_press=restart_app)
+		closeBtn.bind(on_release=close_program)
+		rebootBtn.bind(on_release=reboot)
 		backBtn.bind(on_release=show_full_ui)
 
 		tempPlus.bind(on_press=start_inc_by_button, on_release=stop_inc_by_button)
 		tempMinus.bind(on_press=start_dec_by_button, on_release=stop_dec_by_button)
-		menuBtn.bind(on_press=show_uility_ui, on_release=show_uility_ui)
+		menuBtn.bind(on_release=show_uility_ui)
 		setLabel.bind( on_touch_down=dht_change)
 		
 		#tempSlider.bind( on_touch_down=update_set_temp, on_touch_move=update_set_temp )
@@ -1346,13 +1365,16 @@ class ThermostatApp( App ):
 		thermostatUI.add_widget( waterTempLabel )
 		thermostatUI.add_widget( menuBtn )
 		
-		layout = thermostatUI
+		#layout = thermostatUI
 
 		# Minimap UI initialization
-		uiScreen 	= Screen( name="thermostatUI" )
+		uiScreen 	= ThermoScreen( name="thermostatUI" )
+		uiScreen.add_widget( thermostatUI )
+		screenMgr.add_widget ( uiScreen )
+		layout = screenMgr
 
 		if minUIEnabled:
-			uiScreen.add_widget( thermostatUI )
+			#uiScreen.add_widget( thermostatUI )
 
 			minScreen 	= MinimalScreen( name="minimalUI" )
 			minUI 		= FloatLayout( size=( 800, 480 ) )
@@ -1373,10 +1395,10 @@ class ThermostatApp( App ):
 				dht_label.pos = ( 400, 40)
 				minUI.add_widget(dht_label)
 				
-			screenMgr.add_widget ( uiScreen )
+			#screenMgr.add_widget ( uiScreen )
 			screenMgr.add_widget ( minScreen )
 
-			layout = screenMgr
+			#layout = screenMgr
 			minUITimer = Clock.schedule_once( show_minimal_ui, minUITimeout )
 			lighOffTimer = Clock.schedule_once( light_off, lightOff )
 			csvSaver = Clock.schedule_once(save_graph, 3)
@@ -1394,12 +1416,15 @@ class ThermostatApp( App ):
 			self.rect = Rectangle( size=( 780, 460 ), pos=(10, 10 ))
 			Color( 0.0, 0.0, 0.0, 1 )
 			self.rect = Rectangle( size=( 770, 450 ), pos=(15, 15 ))
-			rebootBtn.pos = ( 540, 160 )
+			rebootBtn.pos = ( 540, 260 )
 			rebootBtn.size = (220, 80)
+			closeBtn.pos = ( 540, 160 )
+			closeBtn.size = (220, 80)
 			backBtn.pos = ( 540, 60 )
 			backBtn.size = (220, 80)
 			
 		utilityUI.add_widget( rebootBtn )
+		utilityUI.add_widget( closeBtn )
 		utilityUI.add_widget( backBtn )
 		utilityScreen 	= UtilityScreen( name="utilityUI" )
 		utilityScreen.add_widget( utilityUI )

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 cd /home/pi/thermostatV3
-python thermostat.py&
+lxterminal -e sudo python thermostat.py
 

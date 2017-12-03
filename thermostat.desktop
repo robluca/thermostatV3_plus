@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=thermostat
+Comment=Prompt to change default password if ssh enabled
+NoDisplay=true
+Exec=sh /home/pi/thermostatV3/thermostat.sh
+NotShowIn=GNOME;KDE;XFCE;
