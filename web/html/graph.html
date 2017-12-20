@@ -6,7 +6,7 @@
   <meta name="GENERATOR" content="mcedit">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta name="Keywords" content="termoregolatore, thermo, temperatura, python">
-  <meta id="viewport" name="viewport" content="initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta id="viewport" name="viewport" content="initial-scale=1.0, minimum-scale=0.5, maximum-scale=2.0, user-scalable=yes" />
   <meta name="Author" content="Jpnos">
   <meta http-equiv="refresh" content="300">
 
@@ -19,7 +19,7 @@
 <tr>
 <td valign="top"><div id="graphdiv" style="width:800px; height:350px;background-color:#eee; padding:0,1em 0.1em 0em 0.1em; border: 1px solid black; margin: 0 auto; align:center"></div></td>
 </tr><tr>
-<td valign="top"><div id="labels" style="width:800px; height:80px;background-color:#eee; padding:0,1em 0.1em 0em 0.1em; border: 1px solid black; font-size=10pt; margin: 0 auto; align:center"></div></td>
+<td valign="top"><div id="labels" style="width:800px; height:180px;background-color:#eee; padding:0,1em 0.1em 0em 0.1em; border: 1px solid black; font-size=10pt; margin: 0 auto; align:center"></div></td>
 </tr>
 <script type="text/javascript">
   g = new Dygraph(document.getElementById("graphdiv"),
@@ -28,13 +28,13 @@
     //showRoller: false,
     title: 'Grafico temperature',
     ylabel: 'Temperature (C)',
-    xlabel: 'Time',
-    labels:["Date","set","letta","switch","Temp Acqua"],
+    xlabel: 'Ora',
+    labels:["Date","set","Temp IN","Temp OUT","Temp Acqua","switch"],
     labelsSeparateLines: true,
     legend: 'always',
     yRangePad: '50',
     xRangePad: '30',
-    //colors: ['#284785', '#FF1111','#000000'],
+    colors: ['#284785', '#FF1111','#A69A29','#7B13AB','#000000'],
     labelsDiv: document.getElementById("labels")
     }
     

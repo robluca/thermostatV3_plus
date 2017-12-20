@@ -3,7 +3,7 @@
     	"boilingMeasured": 99.998043,
     	"elevation": 50,
     	"freezingMeasured": 0.0,
-		"correctSensor":-0.5
+		"correctSensor":-2.4
     },
     "logging": {
         "channel": "file",
@@ -32,18 +32,19 @@
         "tempScale": "metric"
     },
     "thermostat": {
+        "extprobePin": 22,
         "lightPin": 24,
         "fanPin": 18,
         "heatPin": 27,
         "maxTemp": 25.0,
         "minTemp": 15.0,
-        "minUIEnabled": 1,
+        "minUIEnabled": 0,
         "minUITimeout": 30,
-        "tempCheckInterval": 20,
+        "tempCheckInterval": 10,
         "tempHysteresis": 0.3,
         "tempStep": 0.1,
 		"tempice": 16,
-		"lightOff": 40,
+		"lightOff": 60,
 		"user" : "a",
 		"pass" : "a",
 		"saveCsv": 300,

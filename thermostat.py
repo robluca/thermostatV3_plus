@@ -393,13 +393,16 @@ log( LOG_LEVEL_INFO, CHILD_DEVICE_NODE, MSG_SUBTYPE_CUSTOM + "/settings/pir/igno
 
 # GPIO Pin setup and utility routines:
 
-heatPin 			= 23 if not( settings.exists( "thermostat" ) ) else settings.get( "thermostat" )[ "heatPin" ]
+heatPin 			= 27 if not( settings.exists( "thermostat" ) ) else settings.get( "thermostat" )[ "heatPin" ]
 fanPin  			= 25 if not( settings.exists( "thermostat" ) ) else settings.get( "thermostat" )[ "fanPin" ]
 lightPin			= 24 if not( settings.exists( "thermostat" ) ) else settings.get( "thermostat" )[ "lightPin" ]
+extprobePin			= 22 if not( settings.exists( "thermostat" ) ) else settings.get( "thermostat" )[ "extprobePin" ] #Rele Byp Sonda esterna IN2
 
 GPIO.setmode( GPIO.BCM )
 GPIO.setup( heatPin, GPIO.OUT )
 GPIO.output( heatPin, GPIO.HIGH )
+GPIO.setup( extprobePin, GPIO.OUT )
+GPIO.output( extprobePin, GPIO.HIGH )
 GPIO.setup( fanPin, GPIO.OUT )
 GPIO.output( fanPin, GPIO.HIGH )
 GPIO.setup( lightPin, GPIO.OUT )
@@ -992,19 +995,29 @@ def control_callback( control ):
 			reloadSchedule()						
 
 # Check the current sensor temperature
+def set_sensor_precision():
+	global out_sensor, water_sensor, home_sensor
+	with thermostatLock:
+		out_sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a50996ff")
+		out_sensor.set_precision(11)
+		water_sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a4f7beff")
+		water_sensor.set_precision(11)
+		home_sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "041656f614ff")
+		home_sensor.set_precision(11)
+
 		
 def check_sensor_temp( dt ):
 	with thermostatLock:
-		global currentTemp, priorCorrected, outside_temp, water_temp, setTemp
-		global tempSensor,dhtTemp,openDoor,openDoorCheck,measure_count,homeTemp
+		global currentTemp, priorCorrected, outside_temp, water_temp, setTemp, out_sensor, water_sensor, home_sensor
+		global tempSensor,dhtTemp,openDoor,openDoorCheck,measure_count,homeTemp,out_humidity
 		correctedTemp=20
 		tempSlider.value = setTemp
-		sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a50996ff")
-		outside_temp = round(sensor.get_temperature(),1)
-		sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a4f7beff")
-		water_temp = round(sensor.get_temperature(),1)
-		sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "041656f614ff")
-		homeTemp = sensor.get_temperature()
+		#sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a50996ff")
+		outside_temp = round(out_sensor.get_temperature(),1) #round(sensor.get_temperature(),1)
+		#sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a4f7beff")
+		water_temp = round(water_sensor.get_temperature(),1) #round(sensor.get_temperature(),1)
+		#sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "041656f614ff")
+		homeTemp = round(home_sensor.get_temperature(),1) #sensor.get_temperature()
 		#for sensor in W1ThermSensor.get_available_sensors([W1ThermSensor.THERM_SENSOR_DS18B20]):
 			#print("Sensor %s has temperature %.2f" % (sensor.id, sensor.get_temperature()))
 		if dhtEnabled == 1 and dhtTemp <> 0:
@@ -1016,12 +1029,13 @@ def check_sensor_temp( dt ):
 			
 		else:
 			if tempSensor is not None:
-				getDhtSensorData()		
+				#getDhtSensorData() #is it called by check_inside_dht		
 				rawTemp = homeTemp
 #				rawTemp = tempSensor.get_temperature( sensorUnits )
 				correctedTemp = ( ( ( rawTemp - freezingMeasured ) * referenceRange ) / measuredRange ) + freezingPoint + correctSensor
 				log( LOG_LEVEL_DEBUG, CHILD_DEVICE_TEMP, MSG_SUBTYPE_CUSTOM + "/raw", str( rawTemp ) )
 				log( LOG_LEVEL_DEBUG, CHILD_DEVICE_TEMP, MSG_SUBTYPE_CUSTOM + "/corrected", str( correctedTemp ) )
+				print ("rawTemp= " + str(rawTemp) + "\n")
 				#Update out temp that is coming from external sensor
 				weatherDetailsLabel.text = "\n".join((
 					"Temp :   " + str(round(outside_temp,1)) + " " +scaleUnits,
@@ -1061,6 +1075,11 @@ def check_sensor_temp( dt ):
 
 		change_system_settings()
 
+def check_inside_dht( dt ):
+	with thermostatLock:
+		getDhtSensorData()		
+
+		change_system_settings()
 
 # This is called when the desired temp slider is updated:
 def start_inc_by_button(dt):
@@ -1132,7 +1151,7 @@ def save_graph(dt):
 # save graph
 #conversione heatpin in temperatura 2=off 10=on
 	global csvSaver
-	global csvTimeout, water_temp
+	global csvTimeout, water_temp, outside_temp
 	Clock.unschedule(csvSaver)
 	switchTemp = 10
 	if GPIO.input( heatPin ) == True:
@@ -1141,10 +1160,11 @@ def save_graph(dt):
 		switchTemp = 10	
 	#scrivo il file csv con i dati 
 	out_file=open (("./web/graph/" + "thermostat.csv"),"a")
-	out_file.write (time.strftime("%Y/%m/%d %H:%M:%S", time.localtime())+", "+str(setTemp)+", "+str(currentTemp)+ ", " + str(switchTemp) + ", " + str(water_temp) + "\n")
+	#    labels:["Date","set","Temp IN","Temp OUT","Temp Acqua","switch"],
+	out_file.write (time.strftime("%Y/%m/%d %H:%M:%S", time.localtime())+", "+str(setTemp)+", "+str(currentTemp)+ ", " + str(outside_temp) +", " + str(water_temp) + ", " + str(switchTemp) + "\n")
 	out_file.close()
 	timeInit=time.time()
-	
+	print "running save_graph \n"
 	csvSaver = Clock.schedule_once(save_graph, csvTimeout)		
 		
 #premendo set label change dht enabled
@@ -1252,7 +1272,7 @@ class ThermoScreen( Screen ):
 class ThermostatApp( App ):
 
 	def build( self ):
-		global screenMgr
+		global screenMgr,csvSaver
 		screenMgr = ScreenManager( transition=NoTransition())		# FadeTransition seems to have OpenGL bugs in Kivy Dev 1.9.1 and is unstable, so sticking with no transition for now
 
 		# Set up the thermostat UI layout:
@@ -1431,7 +1451,9 @@ class ThermostatApp( App ):
 		screenMgr.add_widget ( utilityScreen )
 				
 		# Start checking the temperature
+		set_sensor_precision()
 		Clock.schedule_interval( check_sensor_temp, tempCheckInterval )
+		Clock.schedule_interval( check_inside_dht, tempCheckInterval+(tempCheckInterval/2) )
 		if dhtEnabled == 1:
 			if dhtoutWired == 0:
 				Clock.schedule_once(dht_load,2)
@@ -1445,6 +1467,7 @@ class ThermostatApp( App ):
 		Clock.schedule_once( display_forecast_weather, 5 )
 		Clock.schedule_once( display_current_weather, 4 )
 		Clock.schedule_once( light_off, lightOff )
+		csvSaver = Clock.schedule_once(save_graph, 20)		
 		return layout
 
 
