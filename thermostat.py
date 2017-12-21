@@ -999,11 +999,11 @@ def set_sensor_precision():
 	global out_sensor, water_sensor, home_sensor
 	with thermostatLock:
 		out_sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a50996ff")
-		out_sensor.set_precision(11)
+		out_sensor.set_precision(12)
 		water_sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a4f7beff")
 		water_sensor.set_precision(11)
 		home_sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "041656f614ff")
-		home_sensor.set_precision(11)
+		home_sensor.set_precision(12)
 
 		
 def check_sensor_temp( dt ):
@@ -1523,7 +1523,7 @@ def reloadSchedule():
 		schedule.clear()
 
 		activeSched = None
-
+		tempToBeSet = 14
 		with thermostatLock:
 			thermoSched = JsonStore( "./setting/thermostat_schedule.json" )
 			if holdControl != "down" :
@@ -1544,7 +1544,16 @@ def reloadSchedule():
 				for i, entry in enumerate( entries ):
 					getattr( schedule.every(), day ).at( entry[ 0 ] ).do( setScheduledTemp, entry[ 1 ] )
 					log( LOG_LEVEL_DEBUG, CHILD_DEVICE_SCHEDULER, MSG_SUBTYPE_TEXT, "Set " + day + ", at: " + entry[ 0 ] + " = " + str( entry[ 1 ] ) + scaleUnits )
-
+					now = datetime.datetime.now()
+					#print now.strftime("%A") + day
+					if (now.strftime("%A").lower() == day.lower()):
+						timenow = now.strftime('%H:%M')
+						if (timenow >= entry[0]):
+							tempToBeSet = entry[1]
+							#print "Analyzing schedule for " + day + " " + str(entry[0]) + " " + str(entry[1]) + " Actual time " + str(timenow)
+			print "Setting temp from scheduler at " + str(tempToBeSet)
+			tempSlider.value=tempToBeSet
+			update_set_temp(tempSlider, tempSlider.value)				
 
 ##############################################################################
 #                                                                            #
