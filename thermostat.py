@@ -999,11 +999,11 @@ def set_sensor_precision():
 	global out_sensor, water_sensor, home_sensor
 	with thermostatLock:
 		out_sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a50996ff")
-		out_sensor.set_precision(12)
+		#out_sensor.set_precision(12)
 		water_sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a4f7beff")
 		water_sensor.set_precision(11)
 		home_sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "041656f614ff")
-		home_sensor.set_precision(12)
+		#home_sensor.set_precision(12)
 
 		
 def check_sensor_temp( dt ):
@@ -1017,7 +1017,7 @@ def check_sensor_temp( dt ):
 		#sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "0516a4f7beff")
 		water_temp = round(water_sensor.get_temperature(),1) #round(sensor.get_temperature(),1)
 		#sensor = W1ThermSensor(W1ThermSensor.THERM_SENSOR_DS18B20, "041656f614ff")
-		homeTemp = round(home_sensor.get_temperature(),1) #sensor.get_temperature()
+		homeTemp = home_sensor.get_temperature() #sensor.get_temperature()
 		#for sensor in W1ThermSensor.get_available_sensors([W1ThermSensor.THERM_SENSOR_DS18B20]):
 			#print("Sensor %s has temperature %.2f" % (sensor.id, sensor.get_temperature()))
 		if dhtEnabled == 1 and dhtTemp <> 0:
@@ -1049,8 +1049,8 @@ def check_sensor_temp( dt ):
 			log( LOG_LEVEL_STATE, CHILD_DEVICE_TEMP, MSG_SUBTYPE_TEMPERATURE, str( currentTemp ) )	
 			priorCorrected = correctedTemp
 			currentTemp = round( correctedTemp, 1 )	
-		else:
-			measure_count=0
+#		else:
+#			measure_count=0
 #			if 	abs( priorCorrected - correctedTemp ) >= 1 and openDoor <= openDoorCheck:
 #				print openDoor,openDoorCheck,priorCorrected,correctedTemp			
 #				openDoor +=1			
