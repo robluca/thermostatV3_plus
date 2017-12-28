@@ -51,6 +51,14 @@
 		"openDoor":300
     },
     "weather": {
+        "appkey": "8d9435457a0cd1717fadec4822dc4347",
+        "forecastRefreshInterval": 30,
+        "location": "37.5550207, 15.0411698",
+        "weatherExceptionInterval": 5,
+        "weatherRefreshInterval": 30,
+        "URLtimeout": 5
+    },
+    "weather1": {
         "appkey": "9b444a2d4b7a5d2da2c966b37bcef619",
         "forecastRefreshInterval": 60,
         "location": "6542346",

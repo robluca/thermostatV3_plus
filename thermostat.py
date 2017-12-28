@@ -289,7 +289,7 @@ tempScale		= settings.get( "scale" )[ "tempScale" ]
 scaleUnits 	  	= u"\xb0" if tempScale == "metric" else "f"
 precipUnits		= " mm" if tempScale == "metric" else '"'
 precipFactor		= 1.0 if tempScale == "metric" else 0.0393701
-precipRound		= 0 if tempScale == "metric" else 1
+precipRound		= 1 if tempScale == "metric" else 1
 sensorUnits		= W1ThermSensor.DEGREES_C if tempScale == "metric" else W1ThermSensor.DEGREES_F
 windFactor		= 3.6 if tempScale == "metric" else 1.0
 windUnits		= " km/h" if tempScale == "metric" else " mph"
@@ -704,33 +704,40 @@ screenMgr    = None
 #                                                                            #
 ##############################################################################
 
-weatherLocation 	 = settings.get( "weather" )[ "location" ]
-weatherAppKey		 = settings.get( "weather" )[ "appkey" ]
-weatherURLBase  	 = "http://api.openweathermap.org/data/2.5/"
-weatherURLForecast 	 = weatherURLBase + "forecast/daily?units=" + tempScale + "&id=" + weatherLocation + "&APPID=" + weatherAppKey + "&lang=it"
-weatherURLTimeout 	 = settings.get( "weather" )[ "URLtimeout" ]
-weatherURLCurrent 	 = weatherURLBase + "weather?units=" + tempScale + "&id=" + weatherLocation + "&APPID=" + weatherAppKey + "&lang=it"
+weatherLocation = settings.get("weather")["location"]
+weatherAppKey = settings.get("weather")["appkey"]
+weatherURLBase = "https://api.darksky.net/forecast/"
+weatherURLTimeout = settings.get("weather")["URLtimeout"]
+weatherURLCurrent = weatherURLBase + weatherAppKey + "/" + weatherLocation + "?units=si&exclude=[minutely,hourly,flags,alerts]&lang=it"
+
+
+#weatherLocation 	 = settings.get( "weather" )[ "location" ]
+#weatherAppKey		 = settings.get( "weather" )[ "appkey" ]
+#weatherURLBase  	 = "http://api.openweathermap.org/data/2.5/"
+#weatherURLForecast 	 = weatherURLBase + "forecast/daily?units=" + tempScale + "&id=" + weatherLocation + "&APPID=" + weatherAppKey + "&lang=it"
+#weatherURLTimeout 	 = settings.get( "weather" )[ "URLtimeout" ]
+#weatherURLCurrent 	 = weatherURLBase + "weather?units=" + tempScale + "&id=" + weatherLocation + "&APPID=" + weatherAppKey + "&lang=it"
 
 forecastRefreshInterval  = settings.get( "weather" )[ "forecastRefreshInterval" ] * 60  
 weatherExceptionInterval = settings.get( "weather" )[ "weatherExceptionInterval" ] * 60  
 weatherRefreshInterval   = settings.get( "weather" )[ "weatherRefreshInterval" ] * 60
 
-weatherSummaryLabel  = Label( text="", size_hint = ( None, None ), font_size='20sp', markup=True, text_size=( 200, 20 ) )
+weatherSummaryLabel  = Label( text="", size_hint = ( None, None ), font_size='18sp', markup=True, text_size=( 250, 50 ), max_lines = 2 )
 weatherDetailsLabel  = Label( text="", size_hint = ( None, None ), font_size='20sp', markup=True, text_size=( 300, 150 ), valign="top" )
 weatherImg           = Image( source="web/images/na.png", size_hint = ( None, None ) )
 weatherminSummaryLabel  = Label( text="", size_hint = ( None, None ), font_size='20sp', markup=True, text_size=( 200, 20 ), color=(0.5,0.5,0.5,0.2) )
 weatherminImg           = Image( source="web/images/na.png", size_hint = ( None, None ), color=(1,1,1,0.4) )
 
-forecastTodaySummaryLabel = Label( text="", size_hint = ( None, None ), font_size='15sp',  markup=True, text_size=( 100, 15 ) )
+forecastTodaySummaryLabel = Label( text="", size_hint = ( None, None ), font_size='10sp',  markup=True, text_size=( 120, 40 ), max_lines = 3 )
 forecastTodayDetailsLabel = Label( text="", size_hint = ( None, None ), font_size='15sp',  markup=True, text_size=( 200, 150 ), valign="top" )
 forecastTodayImg   		  = Image( source="web/images/na.png", size_hint = ( None, None ) )
-forecastTomoSummaryLabel  = Label( text="", size_hint = ( None, None ), font_size='15sp', markup=True, text_size=( 100, 15 ))
+forecastTomoSummaryLabel  = Label( text="", size_hint = ( None, None ), font_size='10sp', markup=True, text_size=( 120, 40 ), max_lines = 3)
 forecastTomoDetailsLabel  = Label( text="", size_hint = ( None, None ), font_size='15sp', markup=True, text_size=( 200, 150 ), valign="top" )
 forecastTomoImg    		  = Image( source="web/images/na.png", size_hint = ( None, None ) )
 
 
 def get_weather( url ):
-	return json.loads( urllib2.urlopen( url, None, weatherURLTimeout ).read() )
+	return json.loads(urllib2.urlopen(url, None, weatherURLTimeout).read())#json.loads( urllib2.urlopen( url, None, weatherURLTimeout ).read() )
 
 
 
@@ -745,15 +752,18 @@ def display_current_weather( dt ):
 		interval = weatherRefreshInterval
 		try:
 			weather = get_weather( weatherURLCurrent )
-			weatherImg.source = "web/images/" + weather[ "weather" ][ 0 ][ "icon" ] + ".png" 
-			weatherSummaryLabel.text = "[b]" + weather[ "weather" ][ 0 ][ "description" ].title() + "[/b]"
-			weatherminImg.source = "web/images/" + weather[ "weather" ][ 0 ][ "icon" ] + ".png" 
-			weatherminSummaryLabel.text = "[b]" + weather[ "weather" ][ 0 ][ "description" ].title() + "[/b]"
+			weatherImg.source = "web/images/" + weather["currently"]["icon"] + ".png"
+			print weatherImg.source
+			weatherSummaryLabel.text = "[b]" + weather["currently"]["summary"] + "[/b]"
+			#weatherImg.source = "web/images/" + weather[ "weather" ][ 0 ][ "icon" ] + ".png" 
+			#weatherSummaryLabel.text = "[b]" + weather[ "weather" ][ 0 ][ "description" ].title() + "[/b]"
+			#weatherminImg.source = "web/images/" + weather[ "weather" ][ 0 ][ "icon" ] + ".png" 
+			#weatherminSummaryLabel.text = "[b]" + weather[ "weather" ][ 0 ][ "description" ].title() + "[/b]"
 			if dhtoutEnabled == 1 and dhtoutWired == 0:
 				dhtoutRead()
 				print "letta temperatura",out_temp
 				if out_temp == 0 or out_temp == None:				
-					temp_vis = str( int( round( weather[ "main" ][ "temp" ], 0 ) ) )
+					temp_vis = str( int( round( weather["currently"]["temperature"], 1 ) ) )
 					
 				else:
 					temp_vis = str(round(out_temp,1))
@@ -763,14 +773,14 @@ def display_current_weather( dt ):
 				getDhtSensorData()
 				print "letta temperatura DHT Filato",out_temp
 				if out_temp == 0 or out_temp == None:				
-					temp_vis = str( int( round( weather[ "main" ][ "temp" ], 0 ) ) )
+					temp_vis = str( int( round( weather["currently"]["temperature"], 1 ) ) )
 				else:
 					temp_vis =  str(round(out_temp,1))
 					out_humidity = str(int(round(out_humidity,0)))
 					print temp_vis
 			else:
 				temp_vis = str(round(outside_temp,1)) #outside_temp is coming from external sensor #was# str( int( round( weather[ "main" ][ "temp" ], 0 ) ) )
-				out_humidity = str( weather[ "main" ][ "humidity" ] )
+				out_humidity = str( weather["currently"]["humidity"]*100 )
 
 			weatherDetailsLabel.text = "\n".join( (
 				"Temp :   " + temp_vis + " " +scaleUnits,
@@ -779,7 +789,7 @@ def display_current_weather( dt ):
 				#"Nuvole:     " + str( weather[ "clouds" ][ "all" ] ) + "%",
 			) )
 
-			log( LOG_LEVEL_INFO, CHILD_DEVICE_WEATHER_CURR, MSG_SUBTYPE_TEXT, weather[ "weather" ][ 0 ][ "description" ].title() + "; " + re.sub( '\n', "; ", re.sub( ' +', ' ', weatherDetailsLabel.text ).strip() ) )
+			log( LOG_LEVEL_INFO, CHILD_DEVICE_WEATHER_CURR, MSG_SUBTYPE_TEXT, weather[ "currently" ][ "summary" ].title() + "; " + re.sub( '\n', "; ", re.sub( ' +', ' ', weatherDetailsLabel.text ).strip() ) )
 
 		except:
 			interval = weatherExceptionInterval
@@ -796,54 +806,56 @@ def display_forecast_weather( dt ):
 	with weatherLock:
 		interval = forecastRefreshInterval
 		try:
-			forecast = get_weather( weatherURLForecast )
-			today    = forecast[ "list" ][ 0 ]
-			tomo     = forecast[ "list" ][ 1 ]
-			forecastTodayImg.source = "web/images/" + today[ "weather" ][ 0 ][ "icon" ] + ".png" 
+			forecast = get_weather( weatherURLCurrent )
+			today    = forecast["daily"]["data"][0]
+			tomo     = forecast["daily"]["data"][1]
+			forecastTodayImg.source = "web/images/" + today[ "icon" ] + ".png" 
 			
-			forecastTodaySummaryLabel.text = "[b]" + today[ "weather" ][ 0 ][ "description" ].title() + "[/b]"		
+			forecastTodaySummaryLabel.text = "[b]" + today[ "summary" ].title() + "[/b]"		
 			
 			todayText = "\n".join( (
-				"Temp Max:    " + str( int( round( today[ "temp" ][ "max" ], 0 ) ) ) + scaleUnits + ", Min: " + str( int( round( today[ "temp" ][ "min" ], 0 ) ) ) + scaleUnits,
-				"Umidita:         "+ str( today[ "humidity" ] ) + "%",
-				"Vento:            " + str( int( round( today[ "speed" ] * windFactor ) ) ) + windUnits + " " + get_cardinal_direction( today[ "deg" ] ),
-				"Nuvole:          " + str( today[ "clouds" ] ) + "%",
+				"Temp Max:  " + str( int( round( today[ "temperatureMax" ], 0 ) ) ) + scaleUnits + ", Min: " + str( int( round( today[ "temperatureMin" ], 0 ) ) ) + scaleUnits,
+				"Umidita:       "+ str( today[ "humidity" ] * 100) + "%",
+				"Vento:          " + str( int( round( today[ "windSpeed" ] * windFactor ) ) ) + windUnits + " " + get_cardinal_direction( today[ "windBearing" ] ),
+				"Nuvole:        " + str( today[ "cloudCover" ] *100 ) + "%",
 			) )
-			if "rain" in today or "snow" in today:
+			if "precipType" in today or "snow" in today:
 				todayText += "\n"
-				if "rain" in today:
-					todayText += "Pioggia:         " + get_precip_amount( today[ "rain" ] ) + precipUnits   
-					if "snow" in today:
-						todayText += ", Neve: " + get_precip_amount( today[ "snow" ] ) + precipUnits
+				if "rain" in today["precipType"]:
+					rainTime = time.strftime("%H:%M", time.localtime(int(today["precipIntensityMaxTime"])))
+					todayText += "Pioggia:       " + get_precip_amount( today[ "precipIntensityMax" ] ) + precipUnits + " " + rainTime
+					if "snow" in today["precipType"]:
+						todayText += ", Neve: " + get_precip_amount( today[ "precipAccumulation" ] ) + precipUnits
 				else:
-					todayText += "Neve:         " + get_precip_amount( today[ "snow" ] ) + precipUnits
+					todayText += "Neve:           " + get_precip_amount( today[ "precipAccumulation" ] ) + precipUnits
 			forecastTodayDetailsLabel.text = todayText;
 
-			forecastTomoImg.source = "web/images/" + tomo[ "weather" ][ 0 ][ "icon" ] + ".png" 
+			forecastTomoImg.source = "web/images/" + tomo["icon" ] + ".png" 
 
-			forecastTomoSummaryLabel.text = "[b]" + tomo[ "weather" ][ 0 ][ "description" ].title() + "[/b]"		
+			forecastTomoSummaryLabel.text = "[b]" + tomo[ "summary" ].title() + "[/b]"		
 	
 			
 			tomoText = "\n".join( (
-				"Temp Max:    " + str( int( round( tomo[ "temp" ][ "max" ], 0 ) ) ) + scaleUnits + ", Min: " + str( int( round( tomo[ "temp" ][ "min" ], 0 ) ) ) + scaleUnits,
-				"Umidita:        " + str( tomo[ "humidity" ] ) + "%",
-				"Vento:           " + str( int( round( tomo[ "speed" ] * windFactor ) ) ) + windUnits + " " + get_cardinal_direction( tomo[ "deg" ] ),
-				"Nuvole:         " + str( tomo[ "clouds" ] ) + "%",
+				"Temp Max:  " + str( int( round( tomo[ "temperatureMax" ], 0 ) ) ) + scaleUnits + ", Min: " + str( int( round( tomo[ "temperatureMin" ], 0 ) ) ) + scaleUnits,
+				"Umidita:      " + str( tomo[ "humidity" ] * 100) + "%",
+				"Vento:         " + str( int( round( tomo[ "windSpeed" ] * windFactor ) ) ) + windUnits + " " + get_cardinal_direction( tomo[ "windBearing" ] ),
+				"Nuvole:       " + str( tomo[ "cloudCover" ] * 100) + "%",
 			) )
 
-			if "rain" in tomo or "snow" in tomo:
+			if "precipType" in tomo or "snow" in tomo:
 				tomoText += "\n"
-				if "rain" in tomo:
-					tomoText += "Pioggia:        " + get_precip_amount( tomo[ "rain" ] ) + precipUnits
-					if "snow" in tomo:
-						tomoText += ", Neve: " + get_precip_amount( tomo[ "snow" ] ) + precipUnits
+				if "rain" in tomo["precipType"]:
+					rainTime = time.strftime("%H:%M", time.localtime(int(tomo["precipIntensityMaxTime"])))
+					tomoText += "Pioggia:       " + get_precip_amount( tomo[ "precipIntensityMax" ] ) + precipUnits + " " + rainTime
+					if "snow" in ["precipType"]:
+						tomoText += ", Neve: " + get_precip_amount( tomo[ "precipAccumulation" ] ) + precipUnits
 				else:
-					tomoText += "Neve:        " + get_precip_amount( tomo[ "snow" ] ) + precipUnits
+					tomoText += "Neve:        " + get_precip_amount( tomo[ "precipAccumulation" ] ) + precipUnits
 
 			forecastTomoDetailsLabel.text = tomoText
 
-			log( LOG_LEVEL_INFO, CHILD_DEVICE_WEATHER_FCAST_TODAY, MSG_SUBTYPE_TEXT, today[ "weather" ][ 0 ][ "description" ].title() + "; " + re.sub( '\n', "; ", re.sub( ' +', ' ', forecastTodayDetailsLabel.text ).strip() ) )
-			log( LOG_LEVEL_INFO, CHILD_DEVICE_WEATHER_FCAST_TOMO, MSG_SUBTYPE_TEXT, tomo[ "weather" ][ 0 ][ "description" ].title() + "; " + re.sub( '\n', "; ", re.sub( ' +', ' ', forecastTomoDetailsLabel.text ).strip() ) )
+			log( LOG_LEVEL_INFO, CHILD_DEVICE_WEATHER_FCAST_TODAY, MSG_SUBTYPE_TEXT, today[ "summary" ].title() + "; " + re.sub( '\n', "; ", re.sub( ' +', ' ', forecastTodayDetailsLabel.text ).strip() ) )
+			log( LOG_LEVEL_INFO, CHILD_DEVICE_WEATHER_FCAST_TOMO, MSG_SUBTYPE_TEXT, tomo[ "summary" ].title() + "; " + re.sub( '\n', "; ", re.sub( ' +', ' ', forecastTomoDetailsLabel.text ).strip() ) )
 
 		except:
 			interval = weatherExceptionInterval
@@ -864,7 +876,7 @@ def get_precip_amount( raw ):
 	precip = round( raw * precipFactor, precipRound )
 
 	if tempScale == "metric":
-		return str( int ( precip ) )
+		return str( precip )
 	else:
 		return str( precip )
 
@@ -1339,21 +1351,21 @@ class ThermostatApp( App ):
 		menuBtn.pos = ( 580, 40 )
 		
 		weatherImg.pos = ( 300, 70 )
-		weatherSummaryLabel.pos = ( 450, 85 )
+		weatherSummaryLabel.pos = ( 350, 0 )
 		weatherDetailsLabel.pos = ( 495,27 )
 		
 		versionLabel.pos = ( 710, 0 )
 		
-		forecastTodayHeading = Label( text="[b][i]Oggi [/i][/b]", font_size='20sp', markup=True, size_hint = ( None, None ), pos = ( 85, 295 ) )
+		forecastTodayHeading = Label( text="[b][i]Oggi [/i][/b]", font_size='20sp', markup=True, size_hint = ( None, None ), pos = ( 85, 320 ) )
 		
 		forecastTodayImg.pos = ( 0, 290 )
-		forecastTodaySummaryLabel.pos = ( 80, 280 )
+		forecastTodaySummaryLabel.pos = ( 115, 290 )
 		forecastTodayDetailsLabel.pos = ( 80, 187 )
 
-		forecastTomoHeading = Label( text="[b][i]Domani [/b][/i]", font_size='20sp', markup=True, size_hint = ( None, None ), pos = ( 90, 125 ) )
+		forecastTomoHeading = Label( text="[b][i]Domani [/b][/i]", font_size='20sp', markup=True, size_hint = ( None, None ), pos = ( 90, 145 ) )
 
 		forecastTomoImg.pos = ( 0, 120 )
-		forecastTomoSummaryLabel.pos = ( 80, 110 )
+		forecastTomoSummaryLabel.pos = ( 115, 130 )
 		forecastTomoDetailsLabel.pos = ( 80, 17 )
 
 		waterTempHeading = Label (text="[b][i]Temp. Acqua: [/b][/i]", font_size='20sp', markup=True, size_hint = ( None, None ), pos = ( 500, 400 ))
@@ -1370,17 +1382,17 @@ class ThermostatApp( App ):
 		thermostatUI.add_widget( dateLabel )
 		thermostatUI.add_widget( timeLabel )
 		thermostatUI.add_widget( weatherImg )
-		#thermostatUI.add_widget( weatherSummaryLabel )
+		thermostatUI.add_widget( weatherSummaryLabel )
 		thermostatUI.add_widget( weatherDetailsLabel )
 		thermostatUI.add_widget( versionLabel )
 		thermostatUI.add_widget( forecastTodayHeading )
 		thermostatUI.add_widget( forecastTodayImg )
-		#thermostatUI.add_widget( forecastTodaySummaryLabel )
+		thermostatUI.add_widget( forecastTodaySummaryLabel )
 		thermostatUI.add_widget( forecastTodayDetailsLabel )
 		thermostatUI.add_widget( forecastTomoHeading )
 		thermostatUI.add_widget( forecastTomoImg )
 		thermostatUI.add_widget( forecastTomoDetailsLabel )
-		#thermostatUI.add_widget( forecastTomoSummaryLabel )
+		thermostatUI.add_widget( forecastTomoSummaryLabel )
 		thermostatUI.add_widget( waterTempHeading )
 		thermostatUI.add_widget( waterTempLabel )
 		thermostatUI.add_widget( menuBtn )
