@@ -668,8 +668,8 @@ def get_status_string():
 
 		setLabel.color = (1,1,1,1)
 		return "   [b]Ur: " +str(round(dhtUm,1))+"%[/b]\n  " + \
-			   "      T Imp:    " +str(temperature)+"c \n  "+\
-			   "      Heat:      " + ( "[i][b][color=ff3333]On[/b][/i][/color]" if testHeat else "Off" ) + "\n  "+\
+			   "      T Imp:    " +str(temperature)+ scaleUnits +" \n  "+\
+			   "   Caldaia:      " + ( "[i][b][color=ff3333]On[/b][/i][/color]" if testHeat else "Off" ) + "\n  "+\
 			   "      Sched:   " + sched
 
 
@@ -783,8 +783,8 @@ def display_current_weather( dt ):
 				out_humidity = str( weather["currently"]["humidity"]*100 )
 
 			weatherDetailsLabel.text = "\n".join( (
-				"Temp :   " + temp_vis + " " +scaleUnits,
-				"    Ur :   " + out_humidity + "%",
+				"T Out: " + temp_vis + " " +scaleUnits,
+				"    Ur : " + out_humidity + "%",
 				#"Vento:       " + str( int( round( weather[ "wind" ][ "speed" ] * windFactor ) ) ) + windUnits + " " + get_cardinal_direction( weather[ "wind" ][ "deg" ] ),
 				#"Nuvole:     " + str( weather[ "clouds" ][ "all" ] ) + "%",
 			) )
@@ -823,11 +823,11 @@ def display_forecast_weather( dt ):
 				todayText += "\n"
 				if "rain" in today["precipType"]:
 					rainTime = time.strftime("%H:%M", time.localtime(int(today["precipIntensityMaxTime"])))
-					todayText += "Pioggia:       " + get_precip_amount( today[ "precipIntensityMax" ] ) + precipUnits + " " + rainTime
+					todayText += "Pioggia:       " + get_precip_amount( today[ "precipIntensityMax" ] ) + precipUnits + " " + rainTime + "\nProbabilita': " + str(today[ "precipProbability" ] * 100) + "%"
 					if "snow" in today["precipType"]:
-						todayText += ", Neve: " + get_precip_amount( today[ "precipAccumulation" ] ) + precipUnits
+						todayText += ", Neve: " + get_precip_amount( today[ "precipAccumulation" ] ) + precipUnits + "\nProbabilita': " + str(today[ "precipProbability" ] * 100) + "%"
 				else:
-					todayText += "Neve:           " + get_precip_amount( today[ "precipAccumulation" ] ) + precipUnits
+					todayText += "Neve:           " + get_precip_amount( today[ "precipAccumulation" ] ) + precipUnits + "\nProbabilita': " + str(today[ "precipProbability" ] * 100) + "%"
 			forecastTodayDetailsLabel.text = todayText;
 
 			forecastTomoImg.source = "web/images/" + tomo["icon" ] + ".png" 
@@ -846,11 +846,11 @@ def display_forecast_weather( dt ):
 				tomoText += "\n"
 				if "rain" in tomo["precipType"]:
 					rainTime = time.strftime("%H:%M", time.localtime(int(tomo["precipIntensityMaxTime"])))
-					tomoText += "Pioggia:       " + get_precip_amount( tomo[ "precipIntensityMax" ] ) + precipUnits + " " + rainTime
+					tomoText += "Pioggia:       " + get_precip_amount( tomo[ "precipIntensityMax" ] ) + precipUnits + " " + rainTime + "\nProbabilita': " + str(tomo[ "precipProbability" ] * 100) + "%"
 					if "snow" in ["precipType"]:
-						tomoText += ", Neve: " + get_precip_amount( tomo[ "precipAccumulation" ] ) + precipUnits
+						tomoText += ", Neve: " + get_precip_amount( tomo[ "precipAccumulation" ] ) + precipUnits + "\nProbabilita': " + str(tomo[ "precipProbability" ] * 100) + "%"
 				else:
-					tomoText += "Neve:        " + get_precip_amount( tomo[ "precipAccumulation" ] ) + precipUnits
+					tomoText += "Neve:        " + get_precip_amount( tomo[ "precipAccumulation" ] ) + precipUnits + "\nProbabilita': " + str(tomo[ "precipProbability" ] * 100) + "%"
 
 			forecastTomoDetailsLabel.text = tomoText
 
@@ -1050,8 +1050,8 @@ def check_sensor_temp( dt ):
 				print ("rawTemp= " + str(rawTemp) + "\n")
 				#Update out temp that is coming from external sensor
 				weatherDetailsLabel.text = "\n".join((
-					"Temp :   " + str(round(outside_temp,1)) + " " +scaleUnits,
-					"    Ur :   " + out_humidity + "%",
+					"T Out: " + str(round(outside_temp,1)) + " " +scaleUnits,
+					"   Ur : " + out_humidity + "%",
 					#"Vento:       " + str( int( round( weather[ "wind" ][ "speed" ] * windFactor ) ) ) + windUnits + " " + get_cardinal_direction( weather[ "wind" ][ "deg" ] ),
 					#"Nuvole:     " + str( weather[ "clouds" ][ "all" ] ) + "%",
 				))
@@ -1362,11 +1362,11 @@ class ThermostatApp( App ):
 		forecastTodaySummaryLabel.pos = ( 115, 290 )
 		forecastTodayDetailsLabel.pos = ( 80, 187 )
 
-		forecastTomoHeading = Label( text="[b][i]Domani [/b][/i]", font_size='20sp', markup=True, size_hint = ( None, None ), pos = ( 90, 145 ) )
+		forecastTomoHeading = Label( text="[b][i]Domani [/b][/i]", font_size='20sp', markup=True, size_hint = ( None, None ), pos = ( 90, 135 ) )
 
-		forecastTomoImg.pos = ( 0, 120 )
-		forecastTomoSummaryLabel.pos = ( 115, 130 )
-		forecastTomoDetailsLabel.pos = ( 80, 17 )
+		forecastTomoImg.pos = ( 0, 110 )
+		forecastTomoSummaryLabel.pos = ( 115, 110 )
+		forecastTomoDetailsLabel.pos = ( 80, 8 )
 
 		waterTempHeading = Label (text="[b][i]Temp. Acqua: [/b][/i]", font_size='20sp', markup=True, size_hint = ( None, None ), pos = ( 500, 400 ))
 		# Add the UI elements to the thermostat UI layout:
@@ -1608,7 +1608,8 @@ class WebInterface(object):
 		
 			status = statusLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
 			status = status.replace( "[color=00ff00]", '<font color="red">' ).replace( "[/color]", '</font>' ) 
-	
+			forecastToday = forecastTodayDetailsLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
+			html = html.replace( "@@forecastToday@@", forecastToday )
 			html = html.replace( "@@status@@", status )
 			html = html.replace( "@@dt@@", dateLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ) + " - " + timeLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ) )
 			html = html.replace( "@@heatChecked@@", "checked" if heatControl.state == "down" else "" )

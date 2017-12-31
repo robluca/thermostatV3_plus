@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta http-equiv="refresh" content="60" />
-  <meta id="viewport" name="viewport" content="initial-scale=1.0, minimum-scale=0.5, maximum-scale=2.0, user-scalable=yes" />
+  <meta id="viewport" name="viewport" content="initial-scale=1.0, minimum-scale=0.4, maximum-scale=2.0, user-scalable=yes" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>Thermostat Web Interface</title>
   <link href="images/Apple_ThermostatIcon_120x120.png" rel="apple-touch-icon" sizes="120x120" />
@@ -36,7 +36,58 @@
 	  }
 	});*/
 
-	 $(".knob").knob({
+				$(".knob").knob({
+                    change : function (value) {
+						$( "#temp" ).val( value.toFixed( 1 ) );
+                        //console.log("change : " + value);
+                    },
+                    release : function (value) {
+                        //console.log(this.$.attr('value'));
+                        //console.log("release : " + value);
+                    },
+                    cancel : function () {
+                        //console.log("cancel : ", this);
+                    },
+                    /*format : function (value) {
+                        return value + '%';
+                    },*/
+                    draw : function (value) {
+                        // "tron" case
+                        if(this.$.data('skin') == 'tron') {
+
+                            this.cursorExt = 0.3;
+
+                            var a = this.arc(this.cv)  // Arc
+                                , pa                   // Previous arc
+                                , r = 1;
+
+                            this.g.lineWidth = this.lineWidth;
+
+                            if (this.o.displayPrevious) {
+                                pa = this.arc(this.v);
+                                this.g.beginPath();
+                                this.g.strokeStyle = this.pColor;
+                                this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, pa.s, pa.e, pa.d);
+                                this.g.stroke();
+                            }
+
+                            this.g.beginPath();
+                            this.g.strokeStyle = r ? this.o.fgColor : this.fgColor ;
+                            this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, a.s, a.e, a.d);
+                            this.g.stroke();
+
+                            this.g.lineWidth = 2;
+                            this.g.beginPath();
+                            this.g.strokeStyle = this.o.fgColor;
+                            this.g.arc( this.xy, this.xy, this.radius - this.lineWidth + 1 + this.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
+                            this.g.stroke();
+
+                            return false;
+                        }
+                    }
+                });
+
+				$(".knobAcqua").knob({
                     change : function (value) {
 						$( "#temp" ).val( value.toFixed( 1 ) );
                         //console.log("change : " + value);
@@ -53,7 +104,8 @@
                     },*/
                     draw : function () {
 
-                        // "tron" case
+						// "tron" case
+					
                         if(this.$.data('skin') == 'tron') {
 
                             this.cursorExt = 0.3;
@@ -110,7 +162,8 @@
   });
  
   </script>
-  <style>
+
+<style>
 	label.button {
 	  	display:inline-block; padding:4px 10px; margin:0px 2px 2px 0px;
 	  	color:#866; text-align:center; font-size:18px; line-height:20px;
@@ -142,12 +195,17 @@
 <body >
 	<div align="center"   >
 		<form method="post" action="set">
-		  	<table width="640px" rules="none" cellpadding="10" cellspacing="0" >
+		  	<table width="700px" rules="none" cellpadding="10" cellspacing="0" >
 				<tr>
-					<td width="30%" align="center"><img src="../images/logo.png" width="50px" height="50px">&nbsp;&nbsp;</td>
-					<td align="center" style="color:#111111"><b>Thermostat @@version@@</b><br>@@dt@@<td>
+					<td width="10%" align="center"><img src="../images/logo.png" width="50px" height="50px">&nbsp;&nbsp;</td>
+					<td align="center" style="width:200px; height:85px; color:#111111"><b>Thermostat @@version@@</b><br>@@dt@@<td>
 					<td>					
+						<div style=" width:140px; height:16px;color:#000000; background-color:#fff"><b>Stato</b><br></div>
 						<div style=" width:140px; height:85px;color:#000000; background-color:#fff">@@status@@</div>
+					</td>
+					<td>
+						<div style=" width:180px; height:16px;color:#000000; background-color:#fff"><b>Previsione Oggi</b><br></div>
+						<div style=" width:180px; height:100px;color:#000000; background-color:#fff">@@forecastToday@@</div>
 					</td>				
 				</tr>
 				<tr><input type="hidden" id="temp" name="temp" readonly style=" color:#ff0000; font-weight:bold; font-size:x-large; width: 2em; " size="4" ></tr>
@@ -156,29 +214,31 @@
 					<tr>					
 					<td width="33%" align="center">
        						<div class="demo" style="font-size:20px;">
-          						<p><b>- Temp in -</b> </p>
-            					<input class="knob " id="current" data-min = "15" data-max = "35" data-thickness = ".4" data-fgColor="orangered" readonly>
+          						<p><b>- Temp interna -</b> </p>
+            					<input class="knob " id="current" data-min = "15" data-max = "35" data-thickness = ".4" data-fgColor="Green" readonly>
         					</div>
 					</td>
 					<td width="33%" align="center">
 							<div class="demo" style="font-size:20px">
-            						<p><b>  - Set Temp - </b></p>
+            						<p><b>  - Temp Impostata - </b></p>
             					
-            					<input class="knob" id="set_Temp" data-min = "15" data-max= "25" data-step=".1" data-fgColor="chartreuse" data-thickness=".4">
+            					<input class="knob" id="set_Temp" data-min = "15" data-max= "25" data-step=".1" data-fgColor="Green" data-thickness=".4">
         					</div>
 					</td>
+					</tr>
+					<tr>
 					<td width="33%" align="center">
-							<div class="demo" style="font-size:px">
-            						<p><b> - Temp out - </b></p>
+							<div class="demo" style="font-size:20px">
+            						<p><b> - Temp Esterna - </b></p>
             					
-            					<input class="knob" id="outTemp" data-min = "-30" data-max="45" data-fgColor="turquoise" data-thickness=".4" data-width="100" readonly >
+            					<input class="knob" id="outTemp" data-min = "-10" data-max="55" data-fgColor="Green" data-thickness=".4" data-width="200" readonly >
         					</div>
 					</td>
 					<td width="33%" align="center">
 							<div class="demo" style="font-size:20px">
-            						<p><b>  - Water Temp - </b></p>
+            						<p><b>  - Temp Acqua - </b></p>
             					
-            					<input class="knob" id="waterTemp" data-min = "0" data-max= "100" data-step=".1" data-fgColor="chartreuse" data-thickness=".4">
+            					<input class="knobAcqua" id="waterTemp" data-min = "0" data-max= "90" data-step=".1" data-fgColor="Green" data-thickness=".4" readonly>
         					</div>
 					</td>
 
@@ -237,4 +297,72 @@
 		</form>
 	</div>
 </body>
+  <script>
+	var setInsetIntervalID = setInterval(changeColor, 100);
+
+
+    function changeColor() {
+		var val = parseInt($(".knobAcqua").val()); //get current value
+		//increase the value and trigger the change
+		//$(".knob").val(val + 1).trigger('change');
+		//the change handler to set the color etc
+		if(val < 25)
+		{
+			$('.knobAcqua').trigger(
+				'configure',
+				{
+						"fgColor":"#7F00FF"
+				}
+			);
+		}
+		else if(val < 35)
+		{
+			$('.knobAcqua').trigger(
+				'configure',
+				{
+						"fgColor":"#EE9A00"
+				}
+			);
+		}
+		else if(val < 45)
+		{
+			$('.knobAcqua').trigger(
+				'configure',
+				{
+						"fgColor":"#EE2C2C"
+				}
+			);
+		}
+
+		var val_set_temp = parseInt($("[id='set_Temp']").val()); //get current value
+		if(val_set_temp < 17)
+		{
+			$("[id='set_Temp']").trigger(
+				'configure',
+				{
+						"fgColor":"#7F00FF"
+				}
+			);
+		}
+		else if(val_set_temp < 20)
+		{
+			$("[id='set_Temp']").trigger(
+				'configure',
+				{
+						"fgColor":"#EE9A00"
+				}
+			);
+		}
+		else if(val_set_temp < 22)
+		{
+			$("[id='set_Temp']").trigger(
+				'configure',
+				{
+						"fgColor":"#EE2C2C"
+				}
+			);
+		}
+		clearInterval(setInsetIntervalID)
+    }
+</script>
 </html>
