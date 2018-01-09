@@ -204,11 +204,11 @@
 						<div style=" width:140px; height:85px;color:#000000; background-color:#fff">@@status@@</div>
 					</td>
 					<td>
-						<div style=" width:180px; height:16px;color:#000000; background-color:#fff"><b>Previsione Oggi</b><br></div>
-						<div style=" width:180px; height:100px;color:#000000; background-color:#fff">@@forecastToday@@</div>
+						<div style=" width:200px; height:16px;color:#000000; background-color:#fff"><b>Previsione Oggi</b><br></div>
+						<div style=" width:200px; height:100px;color:#000000; background-color:#fff">@@forecastToday@@</div>
 					</td>				
 				</tr>
-				<tr><input type="hidden" id="temp" name="temp" readonly style=" color:#ff0000; font-weight:bold; font-size:x-large; width: 2em; " size="4" ></tr>
+				<tr><input type="hidden" id="temp" name="temp" readonly style=" color:#ff0000; font-weight:bold; font-size:x-large; width: 3em; " size="4" ></tr>
 				</table>
 				<table width="640px" rules="none"   >
 					<tr>					
@@ -248,26 +248,29 @@
 				<tr>
 								
 							<td align="center" align="center" valign="right" width="30%" >&nbsp;&nbsp;&nbsp;&nbsp;
-									<label for="heatButton" related="holdButton" class="red">Heat</label>
+									<label for="heatButton" related="holdButton" class="red"><br>Heat</label>
 									<input type="checkbox" id="heatButton" related="holdButton" name="heat" value="on" @@heatChecked@@/>
 							</td>
 							<td align="center" valign="center" width="6%">
 									<input id="set" type="submit" value="Set">
 							</td>
 							<td align="center" valign="left" width="24%">&nbsp;&nbsp;
-									<label for="holdButton" related="heatButton" class="green">Hold</label>
+									<label for="holdButton" related="heatButton" class="green"><br>Manuale</label>
 									<input type="checkbox" id="holdButton" related="heatButton" name="hold" value="on" @@holdChecked@@/>
 							</td>
-							<td width="10%"></td>							
-							<td align="center" valign="right" width="30%">&nbsp;&nbsp;&nbsp;&nbsp;
+							<td width="5%"></td>							
+							<td align="center" valign="right" width="20%">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 									<div>
 										<input  type="submit" value="Schedule" onclick="window.location = 'schedule'; return false;" />
 										<br></br>
 										<input  type="submit" value="Grafico" onclick="window.location = 'graph'; return false;" />
 										<br></br>
+										<input  type="submit" value="Meteo" onclick="window.location = 'weather'; return false;" />
+										<br></br>
 										<input  type="submit" value="Dht" onclick="window.location = 'redirect'; return false;" style="display:@@dhtsubmit@@"/>
 									</div>
 							</td>
+							<td width="5%"></td>							
 				</tr>
 				<tr>
 					

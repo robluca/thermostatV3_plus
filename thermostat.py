@@ -316,6 +316,7 @@ lightOff		= 60   if not( settings.exists( "thermostat" ) ) else settings.get( "t
 
 minUITimer		= None
 csvSaver		= None
+lightOffTimer = None
 
 
 csvTimeout		= 300 if not( settings.exists( "thermostat" ) ) else settings.get( "thermostat" )[ "saveCsv" ] 
@@ -545,7 +546,7 @@ controlColours = {
 					"Cool":   ( 0.0, 0.0, 1.0, 0.4 ),
 					"Heat":   ( 4.0, 0.0, 0.0, 1.0 ),
 					"Fan":    ( 0.0, 1.0, 0.0, 0.4 ),
-					"Hold":   ( 0.5, 1.0, 0.0, 0.4 ),					
+					"Manuale":   ( 0.5, 1.0, 0.0, 0.4 ),					
 				 }
 
 
@@ -574,7 +575,7 @@ fanControl  = ToggleButton( text="[b]Fan[/b]",
 
 setControlState( fanControl, "normal" if not( state.exists( "state" ) ) else state.get( "state" )[ "fanControl" ] )
 
-holdControl = ToggleButton( text="[b]Hold[/b]", 
+holdControl = ToggleButton( text="[b]Manuale[/b]", 
 				markup=True, 
 				size_hint = ( None, None )
 				)
@@ -619,6 +620,16 @@ rebootBtn = Button( text="            [b]Riavvia Sist[/b]",
 				background_down = "web/images/button_11.png",
 				color = (1,1,1,1)
 				)				
+meteoBtn = Button( text="                [b]Previsioni\n                       meteo[/b]", 
+				markup=True, 
+				size_hint = ( None, None ),
+				font_size="18sp",
+				border = (0,0,0,0),
+				background_normal= "web/images/button_1.png",
+				background_down = "web/images/button_11.png",
+				color = (1,1,1,1)
+				)				
+
 backBtn = Button( text="          [b]Indietro[/b]", 
 				markup=True, 
 				size_hint = ( None, None ),
@@ -645,7 +656,7 @@ def get_status_string():
 	with thermostatLock:
 		temperature = 0
 		if holdControl.state == "down":
-			sched = "Hold"
+			sched = "Manuale"
 			temperature = setTemp
 		elif useTestSchedule:
 			sched = "Test"
@@ -735,10 +746,66 @@ forecastTomoSummaryLabel  = Label( text="", size_hint = ( None, None ), font_siz
 forecastTomoDetailsLabel  = Label( text="", size_hint = ( None, None ), font_size='15sp', markup=True, text_size=( 200, 150 ), valign="top" )
 forecastTomoImg    		  = Image( source="web/images/na.png", size_hint = ( None, None ) )
 
+forecastDataNew = []
+forecastSummaryLabelNew = []
+forecastDetailsLabelNew = []
+forecastImgNew = []
+for c in range(0, 3):
+    forecastDataNew.append(Label(text="", size_hint=(None, None), font_size='16sp', markup=True, text_size=(300, 20)))
+    forecastSummaryLabelNew.append(
+        Label(text="", size_hint=(None, None), font_size='16sp', markup=True, text_size=(250, 50)))
+    forecastDetailsLabelNew.append(
+        Label(text="", size_hint=(None, None), font_size='16sp', markup=True, text_size=(300, 150), valign="top"))
+    forecastImgNew.append(Image(source="web/images/na.png", size_hint=(None, None)))
+forecastSummaryNew = Label(text="", size_hint=(None, None), font_size='18sp', markup=True, text_size=(800, 50))
 
 def get_weather( url ):
 	return json.loads(urllib2.urlopen(url, None, weatherURLTimeout).read())#json.loads( urllib2.urlopen( url, None, weatherURLTimeout ).read() )
 
+def load_weather_info(dt):
+    with weatherLock:
+		interval = weatherRefreshInterval
+		try:
+			weather = json.loads(urllib2.urlopen(weatherURLCurrent, None, weatherURLTimeout).read())
+			forecastSummaryNew.text = "[b]" + weather["daily"]["summary"] + "[/b]"
+			# compile data for forecast
+			for c in range(0, 3):
+				today = weather["daily"]["data"][c]
+				forecastDataNew[c].text = "[b]" + time.strftime('%A  %d/%m ', time.localtime(today["time"])) + "[/b]"
+				forecastImgNew[c].source = "web/images/" + today["icon"] + ".png"
+				forecastSummaryLabelNew[c].text = "[b]" + today["summary"][:-1] + "[/b] "
+				forecastTextNew = "\n".join((
+					"Max: " + str(int(round(today["temperatureMax"], 0))) + "        Min: " + str(
+						int(round(today["temperatureMin"], 0))),
+					"Umidita:        " + str(today["humidity"] * 100) + "%",
+
+					"Nuvole:          " + str(today["cloudCover"] * 100) + "%",
+
+					"Pressione:     " + str(int(today["pressure"])) + "mBar",
+
+					"Vento:            " + str(
+						int(round(today["windSpeed"] * windFactor))) + windUnits + " " + get_cardinal_direction(
+						today["windBearing"]),
+
+				))
+				if "precipType" in today or "snow" in today:
+					forecastTextNew += "\n"
+					if "rain" in today["precipType"]:
+						rainTime = time.strftime("%H:%M", time.localtime(int(today["precipIntensityMaxTime"])))
+						forecastTextNew += "Pioggia:       " + get_precip_amount( today[ "precipIntensityMax" ] ) + precipUnits + " " + rainTime + "\nProbabilita': " + str(today[ "precipProbability" ] * 100) + "%"
+						if "snow" in today["precipType"]:
+							forecastTextNew += ", Neve: " + get_precip_amount( today[ "precipAccumulation" ] ) + precipUnits + "\nProbabilita': " + str(today[ "precipProbability" ] * 100) + "%"
+					else:
+						forecastTextNew += "Neve:           " + get_precip_amount( today[ "precipAccumulation" ] ) + precipUnits + "\nProbabilita': " + str(today[ "precipProbability" ] * 100) + "%"
+
+				forecastDetailsLabelNew[c].text = forecastTextNew
+
+		except:
+			print "Something went wrong in load_weather_info"
+
+			interval = weatherExceptionInterval
+
+		Clock.schedule_once( load_weather_info, interval )
 
 
 def get_cardinal_direction( heading ):
@@ -1227,6 +1294,22 @@ def show_full_ui( dt ):
 		screenMgr.current = "thermostatUI"
 		log( LOG_LEVEL_DEBUG, CHILD_DEVICE_SCREEN, MSG_SUBTYPE_TEXT, "Full" )
 
+def select_meteo(testo):
+	global minUITimer
+	global lightOffTimer
+	if minUITimer != None:
+		Clock.unschedule(show_minimal_ui)
+	if lightOffTimer != None:
+		Clock.unschedule(light_off)
+	screenMgr.current = "meteoUI"
+	Clock.schedule_once(returnScreen, 20)
+
+def returnScreen(dt):
+	global lightOffTimer
+	with thermostatLock:
+		lighOffTimer = Clock.schedule_once(light_off, lightOff)
+		screenMgr.current = "thermostatUI"
+
 def light_off( dt ):
 	with thermostatLock:
 		GPIO.output( lightPin, GPIO.LOW )
@@ -1271,6 +1354,9 @@ class MinimalScreen( Screen ):
 class UtilityScreen( Screen ):
 	pass
 
+class MeteoScreen( Screen ):
+	pass
+
 class ThermoScreen( Screen ):
 	pass
 
@@ -1284,7 +1370,7 @@ class ThermoScreen( Screen ):
 class ThermostatApp( App ):
 
 	def build( self ):
-		global screenMgr,csvSaver
+		global screenMgr,csvSaver, lighOffTimer
 		screenMgr = ScreenManager( transition=NoTransition())		# FadeTransition seems to have OpenGL bugs in Kivy Dev 1.9.1 and is unstable, so sticking with no transition for now
 
 		# Set up the thermostat UI layout:
@@ -1305,6 +1391,7 @@ class ThermostatApp( App ):
 
 		heatControl.bind( on_press=control_callback )	
 		holdControl.bind( on_press=control_callback )
+		meteoBtn.bind(on_release=select_meteo)
 		closeBtn.bind(on_release=close_program)
 		rebootBtn.bind(on_release=reboot)
 		backBtn.bind(on_release=show_full_ui)
@@ -1369,6 +1456,15 @@ class ThermostatApp( App ):
 		forecastTomoDetailsLabel.pos = ( 80, 8 )
 
 		waterTempHeading = Label (text="[b][i]Temp. Acqua: [/b][/i]", font_size='20sp', markup=True, size_hint = ( None, None ), pos = ( 500, 400 ))
+		d = 60
+		for c in range(0, 3):
+			forecastDataNew[c].pos = (d + 85, 360)
+			forecastImgNew[c].pos = (d - 20, 290)
+			forecastSummaryLabelNew[c].pos = (d + 40, 220)
+			forecastDetailsLabelNew[c].pos = (d + 70, 110)
+			d += 260
+		forecastSummaryNew.pos = (360, 410)
+
 		# Add the UI elements to the thermostat UI layout:
 		thermostatUI.add_widget( wimg )
 		thermostatUI.add_widget( heatControl )
@@ -1448,6 +1544,8 @@ class ThermostatApp( App ):
 			self.rect = Rectangle( size=( 780, 460 ), pos=(10, 10 ))
 			Color( 0.0, 0.0, 0.0, 1 )
 			self.rect = Rectangle( size=( 770, 450 ), pos=(15, 15 ))
+			meteoBtn.pos = ( 40, 360 )
+			meteoBtn.size = (220, 80)
 			rebootBtn.pos = ( 540, 260 )
 			rebootBtn.size = (220, 80)
 			closeBtn.pos = ( 540, 160 )
@@ -1455,13 +1553,31 @@ class ThermostatApp( App ):
 			backBtn.pos = ( 540, 60 )
 			backBtn.size = (220, 80)
 			
+		utilityUI.add_widget( meteoBtn )
 		utilityUI.add_widget( rebootBtn )
 		utilityUI.add_widget( closeBtn )
 		utilityUI.add_widget( backBtn )
 		utilityScreen 	= UtilityScreen( name="utilityUI" )
 		utilityScreen.add_widget( utilityUI )
 		screenMgr.add_widget ( utilityScreen )
-				
+
+		# creo la pagina per il meteo
+		meteoScreen = MeteoScreen(name="meteoUI")
+		meteoUI = FloatLayout(size=(800, 480))
+		with meteoUI.canvas.before:
+			Color(0.0, 0.0, 0.0, 1)
+			self.rect = Rectangle(size=(800, 480), pos=meteoUI.pos)
+		meteoUI.add_widget(forecastSummaryNew)
+
+		for c in range(0, 3):
+			meteoUI.add_widget(forecastDataNew[c])
+			meteoUI.add_widget(forecastImgNew[c])
+			meteoUI.add_widget(forecastSummaryLabelNew[c])
+			meteoUI.add_widget(forecastDetailsLabelNew[c])
+
+		meteoScreen.add_widget(meteoUI)
+		screenMgr.add_widget ( meteoScreen )
+		
 		# Start checking the temperature
 		set_sensor_precision()
 		Clock.schedule_interval( check_sensor_temp, tempCheckInterval )
@@ -1477,8 +1593,10 @@ class ThermostatApp( App ):
 		Clock.schedule_once( knob_init, 4 )
 		
 		Clock.schedule_once( display_forecast_weather, 5 )
-		Clock.schedule_once( display_current_weather, 4 )
-		Clock.schedule_once( light_off, lightOff )
+#		Clock.schedule_once( display_current_weather, 4 )
+		Clock.schedule_once( load_weather_info, 4 )
+		
+		lightOffTimer = Clock.schedule_once( light_off, lightOff )
 		csvSaver = Clock.schedule_once(save_graph, 20)		
 		return layout
 
@@ -1531,11 +1649,12 @@ def getTestSchedule():
 
 
 def reloadSchedule():
+	global setTemp
 	with scheduleLock:
 		schedule.clear()
 
 		activeSched = None
-		tempToBeSet = 14
+		tempToBeSet = setTemp
 		with thermostatLock:
 			thermoSched = JsonStore( "./setting/thermostat_schedule.json" )
 			if holdControl != "down" :
@@ -1562,10 +1681,10 @@ def reloadSchedule():
 						timenow = now.strftime('%H:%M')
 						if (timenow >= entry[0]):
 							tempToBeSet = entry[1]
-							#print "Analyzing schedule for " + day + " " + str(entry[0]) + " " + str(entry[1]) + " Actual time " + str(timenow)
+							print "Analyzing schedule for " + day + " " + str(entry[0]) + " " + str(entry[1]) + " Actual time " + str(timenow)
 			print "Setting temp from scheduler at " + str(tempToBeSet)
-			tempSlider.value=tempToBeSet
-			update_set_temp(tempSlider, tempSlider.value)				
+		tempSlider.value=round(tempToBeSet,1)
+		update_set_temp(tempSlider, tempSlider.value)				
 
 ##############################################################################
 #                                                                            #
@@ -1731,6 +1850,44 @@ class WebInterface(object):
 		file.close()
 		
 		return html
+	@cherrypy.expose
+	
+	def weather( self ):	
+		log( LOG_LEVEL_INFO, CHILD_DEVICE_WEBSERVER, MSG_SUBTYPE_TEXT, "Served weather.html to: " + cherrypy.request.remote.ip )	
+		
+		
+		file = open( "web/html/weather.html", "r" )
+
+		html = file.read()
+
+		file.close()
+
+		with thermostatLock:		
+
+			html = html.replace( "@@version@@", str( THERMOSTAT_VERSION ) )
+			html = html.replace( "@@temp@@", str( setTemp ) )
+			html = html.replace( "@@current@@", str( currentTemp ) )
+			html = html.replace( "@@minTemp@@", str( minTemp ) )
+			html = html.replace( "@@maxTemp@@", str( maxTemp ) )
+			html = html.replace( "@@tempStep@@", str( tempStep ) )
+			html = html.replace( "@@temp_extern@@",str( outside_temp ) )
+			html = html.replace( "@@water_temp@@",str( water_temp ) )
+		
+			status = statusLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
+			status = status.replace( "[color=00ff00]", '<font color="red">' ).replace( "[/color]", '</font>' ) 
+			forecastToday = forecastTodayDetailsLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
+			html = html.replace( "@@forecastToday@@", forecastToday )
+			html = html.replace( "@@status@@", status )
+			html = html.replace( "@@dt@@", dateLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ) + " - " + timeLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ) )
+			html = html.replace( "@@heatChecked@@", "checked" if heatControl.state == "down" else "" )
+			html = html.replace( "@@holdChecked@@", "checked" if holdControl.state == "down" else "" )
+			if dhtEnabled == 0:
+				html = html.replace ("@@dhtsubmit@@", "none")
+			else:
+				html = html.replace ("@@dhtsubmit@@", "true")
+
+		return html
+
 	
 	@cherrypy.expose
 	def redirect(self):
