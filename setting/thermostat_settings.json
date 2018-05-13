@@ -3,7 +3,7 @@
     	"boilingMeasured": 99.998043,
     	"elevation": 50,
     	"freezingMeasured": 0.0,
-		"correctSensor":-2.4
+		"correctSensor":-2.48
     },
     "logging": {
         "channel": "file",
@@ -51,7 +51,7 @@
 		"openDoor":300
     },
     "weather": {
-        "appkey": "8d9435457a0cd1717fadec4822dc4347",
+        "appkey": "76455039e16f92c124f81b8a034d5ea7",
         "forecastRefreshInterval": 30,
         "location": "37.5550207, 15.0411698",
         "weatherExceptionInterval": 5,

@@ -774,20 +774,31 @@ def load_weather_info(dt):
 				forecastDataNew[c].text = "[b]" + time.strftime('%A  %d/%m ', time.localtime(today["time"])) + "[/b]"
 				forecastImgNew[c].source = "web/images/" + today["icon"] + ".png"
 				forecastSummaryLabelNew[c].text = "[b]" + today["summary"][:-1] + "[/b] "
+				#print "range ", c ,"  forecastDataNew[c].text " ,forecastDataNew[c].text, "  forecastImgNew[c].source ",forecastImgNew[c].source,"  forecastSummaryLabelNew[c].text ",forecastSummaryLabelNew[c].text
+				cloudString = " 0"
+				windGustString = " 0"
+				humidityString = " 0"
+				if "cloudCover" in today:
+					cloudString = str(today["cloudCover"] * 100)
+				if "windGust" in today:
+					windGustString = str(int(round(today["windGust"] * windFactor)))
+				if "cloudCover" in today:
+					humidityString = str( today[ "humidity" ] * 100)
 				forecastTextNew = "\n".join((
 					"Max: " + str(int(round(today["temperatureMax"], 0))) + "        Min: " + str(
 						int(round(today["temperatureMin"], 0))),
-					"Umidita:        " + str(today["humidity"] * 100) + "%",
+					"Umidita:        " + humidityString + "%",
 
-					"Nuvole:          " + str(today["cloudCover"] * 100) + "%",
+					"Nuvole:          " + cloudString + "%",
 
 					"Pressione:     " + str(int(today["pressure"])) + "mBar",
 
 					"Vento:            " + str(
-						int(round(today["windSpeed"] * windFactor))) + windUnits + " " + get_cardinal_direction(
+						int(round(today["windSpeed"] * windFactor))) + " - " + windGustString + windUnits + get_cardinal_direction(
 						today["windBearing"]),
 
 				))
+				#print "forecastTextNew ", forecastTextNew
 				if "precipType" in today or "snow" in today:
 					forecastTextNew += "\n"
 					if "rain" in today["precipType"]:
@@ -877,15 +888,24 @@ def display_forecast_weather( dt ):
 			today    = forecast["daily"]["data"][0]
 			tomo     = forecast["daily"]["data"][1]
 			forecastTodayImg.source = "web/images/" + today[ "icon" ] + ".png" 
-			
 			forecastTodaySummaryLabel.text = "[b]" + today[ "summary" ].title() + "[/b]"		
-			
+			cloudString = " 0"
+			windGustString = " 0"
+			humidityString = " 0"
+			if "cloudCover" in today:
+				cloudString = str(today["cloudCover"] * 100)
+			if "windGust" in today:
+				windGustString = str(int(round(today["windGust"] * windFactor)))
+			if "cloudCover" in today:
+				humidityString = str( today[ "humidity" ] * 100)
 			todayText = "\n".join( (
 				"Temp Max:  " + str( int( round( today[ "temperatureMax" ], 0 ) ) ) + scaleUnits + ", Min: " + str( int( round( today[ "temperatureMin" ], 0 ) ) ) + scaleUnits,
-				"Umidita:       "+ str( today[ "humidity" ] * 100) + "%",
-				"Vento:          " + str( int( round( today[ "windSpeed" ] * windFactor ) ) ) + windUnits + " " + get_cardinal_direction( today[ "windBearing" ] ),
-				"Nuvole:        " + str( today[ "cloudCover" ] *100 ) + "%",
+				"Umidita:       "+ humidityString + "%",
+				"Vento:          " + str( int( round( today[ "windSpeed" ] * windFactor ) ) ) + " - " + windGustString + windUnits +" " + get_cardinal_direction( today[ "windBearing" ] ),
+				"Nuvole:        " + cloudString + "%",
 			) )
+#			print "today -  forecastTodaySummaryLabel.text " ,forecastTodaySummaryLabel.text, "  forecastTodayImg ",forecastTodayImg.source,"  todayText ",todayText
+
 			if "precipType" in today or "snow" in today:
 				todayText += "\n"
 				if "rain" in today["precipType"]:
@@ -901,12 +921,21 @@ def display_forecast_weather( dt ):
 
 			forecastTomoSummaryLabel.text = "[b]" + tomo[ "summary" ].title() + "[/b]"		
 	
-			
+			cloudString = " 0"
+			windGustString = " 0"
+			humidityString = " 0"
+			if "cloudCover" in tomo:
+				cloudString = str(tomo["cloudCover"] * 100)
+			if "windGust" in tomo:
+				windGustString = str(int(round(tomo["windGust"] * windFactor)))
+			if "cloudCover" in tomo:
+				humidityString = str( tomo[ "humidity" ] * 100)
+
 			tomoText = "\n".join( (
 				"Temp Max:  " + str( int( round( tomo[ "temperatureMax" ], 0 ) ) ) + scaleUnits + ", Min: " + str( int( round( tomo[ "temperatureMin" ], 0 ) ) ) + scaleUnits,
-				"Umidita:      " + str( tomo[ "humidity" ] * 100) + "%",
-				"Vento:         " + str( int( round( tomo[ "windSpeed" ] * windFactor ) ) ) + windUnits + " " + get_cardinal_direction( tomo[ "windBearing" ] ),
-				"Nuvole:       " + str( tomo[ "cloudCover" ] * 100) + "%",
+				"Umidita:      " + humidityString + "%",
+				"Vento:         " + str( int( round( tomo[ "windSpeed" ] * windFactor ) ) ) + " - " + windGustString + windUnits + " " + get_cardinal_direction( tomo[ "windBearing" ] ),
+				"Nuvole:       " + cloudString + "%",
 			) )
 
 			if "precipType" in tomo or "snow" in tomo:
@@ -925,6 +954,8 @@ def display_forecast_weather( dt ):
 			log( LOG_LEVEL_INFO, CHILD_DEVICE_WEATHER_FCAST_TOMO, MSG_SUBTYPE_TEXT, tomo[ "summary" ].title() + "; " + re.sub( '\n', "; ", re.sub( ' +', ' ', forecastTomoDetailsLabel.text ).strip() ) )
 
 		except:
+			print "Something went wrong in display_forecast_weather"
+			
 			interval = weatherExceptionInterval
 
 			forecastTodayImg.source = "web/images/na.png"
@@ -1681,7 +1712,7 @@ def reloadSchedule():
 						timenow = now.strftime('%H:%M')
 						if (timenow >= entry[0]):
 							tempToBeSet = entry[1]
-							print "Analyzing schedule for " + day + " " + str(entry[0]) + " " + str(entry[1]) + " Actual time " + str(timenow)
+							#print "Analyzing schedule for " + day + " " + str(entry[0]) + " " + str(entry[1]) + " Actual time " + str(timenow)
 			print "Setting temp from scheduler at " + str(tempToBeSet)
 		tempSlider.value=round(tempToBeSet,1)
 		update_set_temp(tempSlider, tempSlider.value)				
@@ -1728,11 +1759,13 @@ class WebInterface(object):
 			status = statusLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
 			status = status.replace( "[color=00ff00]", '<font color="red">' ).replace( "[/color]", '</font>' ) 
 			forecastToday = forecastTodayDetailsLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
+			weatherSummaryLabel_web = weatherSummaryLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
 			html = html.replace( "@@forecastToday@@", forecastToday )
 			html = html.replace( "@@status@@", status )
 			html = html.replace( "@@dt@@", dateLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ) + " - " + timeLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ) )
 			html = html.replace( "@@heatChecked@@", "checked" if heatControl.state == "down" else "" )
 			html = html.replace( "@@holdChecked@@", "checked" if holdControl.state == "down" else "" )
+			html = html.replace( "@@weatherSummaryLabel_web@@", weatherSummaryLabel_web )
 			if dhtEnabled == 0:
 				html = html.replace ("@@dhtsubmit@@", "none")
 			else:
@@ -1875,7 +1908,45 @@ class WebInterface(object):
 		
 			status = statusLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
 			status = status.replace( "[color=00ff00]", '<font color="red">' ).replace( "[/color]", '</font>' ) 
+
+			forecastDataNew_day1 = forecastDataNew[0].text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
+			forecastImgNew_day1 = forecastImgNew[0].source.replace("web/","")
+			forecastSummaryLabelNew_day1 = forecastSummaryLabelNew[0].text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
+			forecastDetailsLabelNew_day1 = forecastDetailsLabelNew[0].text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
+			
+			forecastDataNew_day2 = forecastDataNew[1].text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
+			forecastImgNew_day2 = forecastImgNew[1].source.replace("web/","")
+			forecastSummaryLabelNew_day2 = forecastSummaryLabelNew[1].text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
+			forecastDetailsLabelNew_day2 = forecastDetailsLabelNew[1].text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
+			
+			forecastDataNew_day3 = forecastDataNew[2].text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
+			forecastImgNew_day3 = forecastImgNew[2].source.replace("web/","")
+			forecastSummaryLabelNew_day3 = forecastSummaryLabelNew[2].text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
+			forecastDetailsLabelNew_day3 = forecastDetailsLabelNew[2].text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
+			weatherSummaryLabel_web = weatherSummaryLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
+			forecastSummaryNew_weather = forecastSummaryNew.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
+
+			html = html.replace( "@@forecastDataNew_day1@@", forecastDataNew_day1 )
+			html = html.replace( "@@forecastImgNew_day1@@", forecastImgNew_day1 )
+			html = html.replace( "@@forecastSummaryLabelNew_day1@@", forecastSummaryLabelNew_day1 )
+			html = html.replace( "@@forecastDetailsLabelNew_day1@@", forecastDetailsLabelNew_day1 )
+
+			html = html.replace( "@@forecastDataNew_day2@@", forecastDataNew_day2 )
+			html = html.replace( "@@forecastImgNew_day2@@", forecastImgNew_day2 )
+			html = html.replace( "@@forecastSummaryLabelNew_day2@@", forecastSummaryLabelNew_day2 )
+			html = html.replace( "@@forecastDetailsLabelNew_day2@@", forecastDetailsLabelNew_day2 )
+
+			html = html.replace( "@@forecastDataNew_day3@@", forecastDataNew_day3 )
+			html = html.replace( "@@forecastImgNew_day3@@", forecastImgNew_day3 )
+			html = html.replace( "@@forecastSummaryLabelNew_day3@@", forecastSummaryLabelNew_day3 )
+			html = html.replace( "@@forecastDetailsLabelNew_day3@@", forecastDetailsLabelNew_day3 )
+
+			html = html.replace( "@@weatherSummaryLabel_web@@", weatherSummaryLabel_web )
+			html = html.replace( "@@forecastSummaryNew_weather@@", forecastSummaryNew_weather )
+
+			
 			forecastToday = forecastTodayDetailsLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ).replace("[/color]","</font>").replace("[color=ff3333]","<font color=\"red\">").replace("[i]","<i>").replace("[/i]","</i>").replace( "\n", "<br>" )
+
 			html = html.replace( "@@forecastToday@@", forecastToday )
 			html = html.replace( "@@status@@", status )
 			html = html.replace( "@@dt@@", dateLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ) + " - " + timeLabel.text.replace( "[b]", "<b>" ).replace( "[/b]", "</b>" ) )
